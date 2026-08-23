@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safe Harbor 署名 — bughunter.uk</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: rgba(255,255,255,0.1);
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #f0a500;
+      --accent-dim: rgba(240,165,0,0.12);
+      --critical: #f85149;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+    .logo {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin-bottom: 2rem;
+    }
+    .panel {
+      width: 100%;
+      max-width: 600px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+    }
+    h1 { font-size: 1.25rem; margin-bottom: 0.4rem; }
+    .muted { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; }
+    .policy-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+    .sign-area-wrap {
+      margin: 1.5rem 0 0.5rem;
+    }
+    .sign-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    canvas#sign-canvas {
+      display: block;
+      width: 100%;
+      height: 180px;
+      background: #fff;
+      border-radius: 6px;
+      border: 2px solid var(--border);
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .sign-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.5rem;
+    }
+    button {
+      padding: 0.55rem 1.2rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .btn-primary { background: var(--accent); color: #000; }
+    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-primary:not(:disabled):hover { opacity: 0.85; }
+    .btn-ghost:not(:disabled):hover { background: rgba(255,255,255,0.06); }
+    .error { color: var(--critical); font-size: 0.85rem; margin-top: 1rem; display: none; }
+    .success {
+      text-align: center;
+      padding: 2rem;
+    }
+    .success h2 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+    .loading-screen {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1rem; padding: 3rem 0; color: var(--text-muted);
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="logo">bughunter.uk</div>
+  <div class="panel" id="app">
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <span>認証中…</span>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://api.bughunter.uk";
+
+    // URLパラメータからトークンを取得
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token") || "";
+
+    let companyName = "";
+    let canvasEl, ctx;
+    let drawing = false;
+    let hasSigned = false;
+
+    const app = document.getElementById("app");
+
+    async function init() {
+      if (!token) {
+        showError("トークンがありません。bughunter.uk のマイページから再度アクセスしてください。");
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/safe-harbor/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 401) {
+          showError("セッションが無効です。bughunter.uk に再ログインしてからお試しください。");
+          return;
+        }
+        const data = await res.json();
+        companyName = data.companyName || "";
+        renderSignForm(data.pdfUrl);
+      } catch (e) {
+        showError("サーバーへの接続に失敗しました。しばらくしてから再度お試しください。");
+      }
+    }
+
+    function policyText(company) {
+      return `Safe Harbor ポリシー
+
+${company}（以下「当社」）は、善意かつ誠実な調査を目的として行われたセキュリティリサーチ活動について、バグバウンティプログラム「bughunter.uk」の利用規約の範囲内である限り、法的措置を取らないことを宣言します。
+
+対象となる行動
+・当社のシステム・サービスに対する善意の脆弱性調査
+・発見した脆弱性の当社への報告
+・調査の過程で取得した情報を第三者に開示しないこと
+
+免責の条件
+・当社の許可なく実サービスのデータを窃取・改ざんしないこと
+・サービスの可用性を妨害しないこと
+・発見した脆弱性を当社への報告前に悪用しないこと
+
+本ポリシーは ${company} の代表者による署名をもって効力を持ちます。`;
+    }
+
+    function renderSignForm(existingPdfUrl) {
+      app.innerHTML = `
+        <h1>Safe Harbor 署名</h1>
+        <p class="muted" style="margin-top:0.4rem">以下のポリシー文書を確認し、担当者が署名してください。署名後、PDFがGoogle Driveに自動保存されます。</p>
+
+        <div class="policy-box" id="policy-text"></div>
+
+        ${existingPdfUrl ? `<p class="muted" style="margin-bottom:0.75rem">⚠️ すでに署名済みのPDFが存在します。再署名すると上書きされます。</p>` : ""}
+
+        <div class="sign-area-wrap">
+          <p class="sign-label">担当者署名（枠内にマウスまたは指で描いてください）</p>
+          <canvas id="sign-canvas" width="1200" height="360"></canvas>
+          <div class="sign-actions">
+            <button class="btn-ghost" id="clear-btn" type="button">クリア</button>
+          </div>
+        </div>
+
+        <p class="error" id="err-msg"></p>
+        <button class="btn-primary" id="submit-btn" type="button" style="margin-top:1.25rem;width:100%">署名して送信する</button>
+      `;
+
+      document.getElementById("policy-text").textContent = policyText(companyName);
+
+      canvasEl = document.getElementById("sign-canvas");
+      ctx = canvasEl.getContext("2d");
+      ctx.strokeStyle = "#1a1a2e";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // マウス
+      canvasEl.addEventListener("mousedown", (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(...pos(e)); });
+      canvasEl.addEventListener("mousemove", (e) => { if (!drawing) return; ctx.lineTo(...pos(e)); ctx.stroke(); hasSigned = true; });
+      canvasEl.addEventListener("mouseup", () => { drawing = false; });
+      canvasEl.addEventListener("mouseleave", () => { drawing = false; });
+
+      // タッチ
+      canvasEl.addEventListener("touchstart", (e) => { e.preventDefault(); drawing = true; ctx.beginPath(); ctx.moveTo(...pos(e.touches[0])); }, { passive: false });
+      canvasEl.addEventListener("touchmove", (e) => { e.preventDefault(); if (!drawing) return; ctx.lineTo(...pos(e.touches[0])); ctx.stroke(); hasSigned = true; }, { passive: false });
+      canvasEl.addEventListener("touchend", () => { drawing = false; });
+
+      document.getElementById("clear-btn").addEventListener("click", () => {
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        hasSigned = false;
+      });
+
+      document.getElementById("submit-btn").addEventListener("click", submit);
+    }
+
+    function pos(e) {
+      const rect = canvasEl.getBoundingClientRect();
+      const scaleX = canvasEl.width / rect.width;
+      const scaleY = canvasEl.height / rect.height;
+      return [
+        (e.clientX - rect.left) * scaleX,
+        (e.clientY - rect.top) * scaleY,
+      ];
+    }
+
+    async function submit() {
+      const errEl = document.getElementById("err-msg");
+      errEl.style.display = "none";
+
+      if (!hasSigned) {
+        errEl.textContent = "署名を描いてください";
+        errEl.style.display = "block";
+        return;
+      }
+
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "PDFを生成してアップロード中…";
+
+      try {
+        // PDF を生成（署名画像 + ポリシーテキストをCanvas合成してbase64化）
+        const pdfBase64 = await buildPdf();
+
+        const res = await fetch(`${API_BASE}/safe-harbor/submit`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ pdf: pdfBase64 }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "送信に失敗しました");
+
+        app.innerHTML = `
+          <div class="success">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem">✅</div>
+            <h2>署名が完了しました</h2>
+            <p class="muted" style="margin-top:0.5rem">PDFをGoogle Driveに保存し、Safe Harborバッジを付与しました。</p>
+            <a href="${data.pdfUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:1rem;color:var(--accent);font-size:0.9rem">保存されたPDFを確認する →</a>
+            <p class="muted" style="margin-top:1.5rem;font-size:0.82rem">このページは閉じていただいて構いません。</p>
+          </div>
+        `;
+      } catch (e) {
+        errEl.textContent = e.message || "エラーが発生しました";
+        errEl.style.display = "block";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "署名して送信する";
+      }
+    }
+
+    // ポリシーテキスト + 署名画像を1枚のCanvasに合成してPNG→PDF(バイナリ)に変換
+    async function buildPdf() {
+      const W = 1240, H = 1754; // A4 比率
+      const offscreen = document.createElement("canvas");
+      offscreen.width = W; offscreen.height = H;
+      const c = offscreen.getContext("2d");
+
+      // 背景
+      c.fillStyle = "#ffffff";
+      c.fillRect(0, 0, W, H);
+
+      // ロゴ
+      c.fillStyle = "#f0a500";
+      c.font = "bold 36px sans-serif";
+      c.fillText("bughunter.uk", 80, 80);
+
+      // タイトル
+      c.fillStyle = "#1a1a2e";
+      c.font = "bold 42px sans-serif";
+      c.fillText("Safe Harbor ポリシー", 80, 150);
+
+      // ポリシーテキスト
+      c.font = "28px sans-serif";
+      c.fillStyle = "#333";
+      const lines = policyText(companyName).split("\n");
+      let y = 230;
+      for (const line of lines) {
+        if (line.startsWith("Safe Harbor") || line === `${companyName}`) {
+          c.font = "bold 28px sans-serif";
+        } else {
+          c.font = "28px sans-serif";
+        }
+        c.fillText(line, 80, y);
+        y += line === "" ? 18 : 42;
+        if (y > H - 380) break;
+      }
+
+      // 署名枠
+      y = Math.max(y + 40, H - 320);
+      c.strokeStyle = "#ccc";
+      c.lineWidth = 1;
+      c.strokeRect(80, y, 600, 180);
+      c.font = "22px sans-serif";
+      c.fillStyle = "#999";
+      c.fillText("担当者署名", 80, y - 10);
+
+      // 署名画像を貼り付け
+      c.drawImage(canvasEl, 80, y, 600, 180);
+
+      // 日時
+      c.font = "22px sans-serif";
+      c.fillStyle = "#666";
+      c.fillText(`署名日時: ${new Date().toLocaleString("ja-JP")}`, 80, y + 210);
+      c.fillText(`会社名: ${companyName}`, 80, y + 250);
+
+      // PNG → Blob → ArrayBuffer → 簡易PDF wrap（本物のPDFにするには別ライブラリが必要だが、ここではPNG埋め込みPDFを作る）
+      const pngBlob = await new Promise((res) => offscreen.toBlob(res, "image/png"));
+      const pngBuffer = await pngBlob.arrayBuffer();
+      const pdfBuffer = wrapPngAsPdf(new Uint8Array(pngBuffer), W, H);
+
+      // base64 エンコード
+      let bin = "";
+      for (const b of pdfBuffer) bin += String.fromCharCode(b);
+      return btoa(bin);
+    }
+
+    // PNG を PDF ページに埋め込む最小限のPDF生成
+    function wrapPngAsPdf(pngBytes, w, h) {
+      const enc = new TextEncoder();
+      const ptW = Math.round(w * 0.7559); // px → pt (96dpi)
+      const ptH = Math.round(h * 0.7559);
+      const imgLen = pngBytes.length;
+
+      const obj1 = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
+      const obj2 = `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;
+      const obj3 = `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ptW} ${ptH}] /Contents 4 0 R /Resources << /XObject << /I1 5 0 R >> >> >>\nendobj\n`;
+      const stream = `q ${ptW} 0 0 ${ptH} 0 0 cm /I1 Do Q`;
+      const obj4 = `4 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`;
+      const obj5header = `5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ${imgLen} >>\nstream\n`;
+      const obj5footer = `\nendstream\nendobj\n`;
+
+      const header = enc.encode("%PDF-1.4\n");
+      const b1 = enc.encode(obj1);
+      const b2 = enc.encode(obj2);
+      const b3 = enc.encode(obj3);
+      const b4 = enc.encode(obj4);
+      const b5h = enc.encode(obj5header);
+      const b5f = enc.encode(obj5footer);
+
+      // xref
+      let offset = header.length;
+      const offsets = [];
+      const parts = [b1, b2, b3, b4, b5h, pngBytes, b5f];
+      for (let i = 0; i < 5; i++) {
+        offsets.push(offset + header.length - header.length + [0,b1.length,b1.length+b2.length,b1.length+b2.length+b3.length,b1.length+b2.length+b3.length+b4.length][i]);
+      }
+      const o0 = header.length;
+      const o1 = o0 + b1.length;
+      const o2 = o1 + b2.length;
+      const o3 = o2 + b3.length;
+      const o4 = o3 + b4.length;
+      const totalBefore = o4 + b5h.length + pngBytes.length + b5f.length;
+
+      const xref = `xref\n0 6\n0000000000 65535 f \n${String(o0).padStart(10,"0")} 00000 n \n${String(o1).padStart(10,"0")} 00000 n \n${String(o2).padStart(10,"0")} 00000 n \n${String(o3).padStart(10,"0")} 00000 n \n${String(o4).padStart(10,"0")} 00000 n \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${totalBefore}\n%%EOF`;
+      const bxref = enc.encode(xref);
+
+      const total = header.length + b1.length + b2.length + b3.length + b4.length + b5h.length + pngBytes.length + b5f.length + bxref.length;
+      const out = new Uint8Array(total);
+      let pos = 0;
+      for (const chunk of [header, b1, b2, b3, b4, b5h, pngBytes, b5f, bxref]) {
+        out.set(chunk, pos); pos += chunk.length;
+      }
+      return out;
+    }
+
+    function showError(msg) {
+      app.innerHTML = `
+        <h1>エラー</h1>
+        <p class="muted" style="margin-top:0.75rem;color:#f85149">${msg}</p>
+        <a href="https://bughunter.uk" style="display:inline-block;margin-top:1.5rem;color:var(--accent);font-size:0.9rem">← bughunter.uk に戻る</a>
+      `;
+    }
+
+    init();
+  </script>
+</body>
+</html>
