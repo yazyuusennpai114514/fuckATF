@@ -248,7 +248,7 @@ ${company}（以下「当社」）は、善意かつ誠実な調査を目的と�
 
       try {
         // PDF を生成（署名画像 + ポリシーテキストをCanvas合成してbase64化）
-        const pdfBase64 = await buildPdf();
+        const pngBase64 = await buildPng();
 
         const res = await fetch(`${API_BASE}/safe-harbor/submit`, {
           method: "POST",
@@ -256,7 +256,7 @@ ${company}（以下「当社」）は、善意かつ誠実な調査を目的と�
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ pdf: pdfBase64 }),
+          body: JSON.stringify({ png: pngBase64 }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "送信に失敗しました");
@@ -266,7 +266,7 @@ ${company}（以下「当社」）は、善意かつ誠実な調査を目的と�
             <div style="font-size:2.5rem;margin-bottom:0.75rem">✅</div>
             <h2>署名が完了しました</h2>
             <p class="muted" style="margin-top:0.5rem">PDFをGoogle Driveに保存し、Safe Harborバッジを付与しました。</p>
-            <a href="${data.pdfUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:1rem;color:var(--accent);font-size:0.9rem">保存されたPDFを確認する →</a>
+            <a href="${data.pdfUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:1rem;color:var(--accent);font-size:0.9rem">保存された画像を確認する →</a>
             <p class="muted" style="margin-top:1.5rem;font-size:0.82rem">このページは閉じていただいて構いません。</p>
           </div>
         `;
@@ -278,8 +278,8 @@ ${company}（以下「当社」）は、善意かつ誠実な調査を目的と�
       }
     }
 
-    // ポリシーテキスト + 署名画像を1枚のCanvasに合成してPNG→PDF(バイナリ)に変換
-    async function buildPdf() {
+    // ポリシーテキスト + 署名画像を1枚のCanvasに合成してPNGをbase64で返す
+    async function buildPng() {
       const W = 1240, H = 1754; // A4 比率
       const offscreen = document.createElement("canvas");
       offscreen.width = W; offscreen.height = H;
@@ -333,64 +333,14 @@ ${company}（以下「当社」）は、善意かつ誠実な調査を目的と�
       c.fillText(`署名日時: ${new Date().toLocaleString("ja-JP")}`, 80, y + 210);
       c.fillText(`会社名: ${companyName}`, 80, y + 250);
 
-      // PNG → Blob → ArrayBuffer → 簡易PDF wrap（本物のPDFにするには別ライブラリが必要だが、ここではPNG埋め込みPDFを作る）
-      const pngBlob = await new Promise((res) => offscreen.toBlob(res, "image/png"));
-      const pngBuffer = await pngBlob.arrayBuffer();
-      const pdfBuffer = wrapPngAsPdf(new Uint8Array(pngBuffer), W, H);
-
-      // base64 エンコード
-      let bin = "";
-      for (const b of pdfBuffer) bin += String.fromCharCode(b);
-      return btoa(bin);
-    }
-
-    // PNG を PDF ページに埋め込む最小限のPDF生成
-    function wrapPngAsPdf(pngBytes, w, h) {
-      const enc = new TextEncoder();
-      const ptW = Math.round(w * 0.7559); // px → pt (96dpi)
-      const ptH = Math.round(h * 0.7559);
-      const imgLen = pngBytes.length;
-
-      const obj1 = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
-      const obj2 = `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;
-      const obj3 = `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ptW} ${ptH}] /Contents 4 0 R /Resources << /XObject << /I1 5 0 R >> >> >>\nendobj\n`;
-      const stream = `q ${ptW} 0 0 ${ptH} 0 0 cm /I1 Do Q`;
-      const obj4 = `4 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`;
-      const obj5header = `5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length ${imgLen} >>\nstream\n`;
-      const obj5footer = `\nendstream\nendobj\n`;
-
-      const header = enc.encode("%PDF-1.4\n");
-      const b1 = enc.encode(obj1);
-      const b2 = enc.encode(obj2);
-      const b3 = enc.encode(obj3);
-      const b4 = enc.encode(obj4);
-      const b5h = enc.encode(obj5header);
-      const b5f = enc.encode(obj5footer);
-
-      // xref
-      let offset = header.length;
-      const offsets = [];
-      const parts = [b1, b2, b3, b4, b5h, pngBytes, b5f];
-      for (let i = 0; i < 5; i++) {
-        offsets.push(offset + header.length - header.length + [0,b1.length,b1.length+b2.length,b1.length+b2.length+b3.length,b1.length+b2.length+b3.length+b4.length][i]);
-      }
-      const o0 = header.length;
-      const o1 = o0 + b1.length;
-      const o2 = o1 + b2.length;
-      const o3 = o2 + b3.length;
-      const o4 = o3 + b4.length;
-      const totalBefore = o4 + b5h.length + pngBytes.length + b5f.length;
-
-      const xref = `xref\n0 6\n0000000000 65535 f \n${String(o0).padStart(10,"0")} 00000 n \n${String(o1).padStart(10,"0")} 00000 n \n${String(o2).padStart(10,"0")} 00000 n \n${String(o3).padStart(10,"0")} 00000 n \n${String(o4).padStart(10,"0")} 00000 n \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${totalBefore}\n%%EOF`;
-      const bxref = enc.encode(xref);
-
-      const total = header.length + b1.length + b2.length + b3.length + b4.length + b5h.length + pngBytes.length + b5f.length + bxref.length;
-      const out = new Uint8Array(total);
-      let pos = 0;
-      for (const chunk of [header, b1, b2, b3, b4, b5h, pngBytes, b5f, bxref]) {
-        out.set(chunk, pos); pos += chunk.length;
-      }
-      return out;
+      // PNG として base64 エンコード
+      return new Promise((resolve) => {
+        offscreen.toBlob((blob) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(blob);
+        }, "image/png");
+      });
     }
 
     function showError(msg) {
