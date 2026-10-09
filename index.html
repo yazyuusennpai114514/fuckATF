@@ -2,356 +2,1910 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Safe Harbor 署名 — bughunter.uk</title>
+  <title>bughunter</title>
+</head>
+<div class="app" id="app">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
     :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --border: rgba(255,255,255,0.1);
-      --text: #e6edf3;
-      --text-muted: #8b949e;
-      --accent: #f0a500;
-      --accent-dim: rgba(240,165,0,0.12);
-      --critical: #f85149;
-      --radius: 10px;
+      --bg: #0F1521;
+      --panel: #161D2B;
+      --panel-raised: #1D2537;
+      --border: #2A3349;
+      --text: #E8EAF0;
+      --text-muted: #8994AC;
+      --accent: #E8A33D;
+      --critical: #E5484D;
+      --high: #F0883E;
+      --medium: #E8C547;
+      --low: #5B8DEF;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
+    * { box-sizing: border-box; }
+    .app {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem 1rem 4rem;
-    }
-    .logo {
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      color: var(--accent);
-      margin-bottom: 2rem;
-    }
-    .panel {
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100%;
       width: 100%;
-      max-width: 600px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2rem;
+      border-radius: 12px;
+      overflow: hidden;
     }
-    h1 { font-size: 1.25rem; margin-bottom: 0.4rem; }
-    .muted { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; }
-    .policy-box {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.25rem 1.5rem;
-      margin: 1.5rem 0;
-      font-size: 0.9rem;
-      line-height: 1.8;
-      white-space: pre-wrap;
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 0.75rem; }
+    .brand { background: none; border: none; display: flex; align-items: baseline; gap: 0.35rem; cursor: pointer; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+    .brand-mark { color: var(--accent); font-size: 1.3rem; }
+    .brand-text { font-size: 1.15rem; font-weight: 600; letter-spacing: 0.02em; }
+    .brand-sub { color: var(--text-muted); font-weight: 400; }
+    .tabs { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+    .tab { background: none; border: 1px solid transparent; color: var(--text-muted); font-family: 'Noto Sans JP', sans-serif; font-size: 0.85rem; padding: 0.5rem 0.85rem; border-radius: 6px; cursor: pointer; transition: all 0.15s ease; }
+    .tab:hover { color: var(--text); background: var(--panel-raised); }
+    .tab.active { color: var(--bg); background: var(--accent); font-weight: 500; }
+    .main { padding: 2rem 1.5rem 3rem; max-width: 960px; margin: 0 auto; }
+    .loading { text-align: center; padding: 4rem 0; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+    .hero { display: flex; flex-direction: column; gap: 2.5rem; padding-top: 1rem; }
+    .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.12em; color: var(--accent); margin: 0 0 0.75rem; }
+    .hero-copy h1 { font-family: 'IBM Plex Mono', monospace; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.35; font-weight: 600; margin: 0 0 1rem; }
+    .lead { color: var(--text-muted); font-size: 0.98rem; line-height: 1.8; max-width: 560px; margin: 0 0 1.5rem; }
+    .hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .btn { font-family: 'Noto Sans JP', sans-serif; font-size: 0.9rem; font-weight: 500; padding: 0.75rem 1.35rem; border-radius: 7px; border: 1px solid transparent; cursor: pointer; transition: transform 0.1s ease, opacity 0.15s ease; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn.primary { background: var(--accent); color: #1A1204; }
+    .btn.primary:hover:not(:disabled) { opacity: 0.9; }
+    .btn.ghost { background: none; border-color: var(--border); color: var(--text); }
+    .btn.ghost:hover { background: var(--panel-raised); }
+    .btn.sm { padding: 0.5rem 0.9rem; font-size: 0.8rem; }
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .stat { background: var(--panel); padding: 1.4rem 1rem; display: flex; flex-direction: column; gap: 0.4rem; border: none; cursor: default; color: var(--text); text-align: left; font-family: inherit; width: 100%; }
+    button.stat { cursor: pointer; }
+    button.stat:hover { background: var(--panel-raised); }
+    .stat-num { font-family: 'IBM Plex Mono', monospace; font-size: 2rem; font-weight: 600; color: var(--accent); }
+    .stat-label { font-size: 0.78rem; color: var(--text-muted); }
+    .section-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--text-muted); text-transform: uppercase; margin: 0 0 0.5rem; }
+    .legend-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .severity-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; padding: 0.32rem 0.65rem; border-radius: 999px; border: 1px solid var(--chip); color: var(--chip); background: color-mix(in srgb, var(--chip) 12%, transparent); }
+    .severity-chip i { width: 6px; height: 6px; border-radius: 50%; background: var(--chip); display: inline-block; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; }
+    .panel.narrow { max-width: 620px; margin: 0 auto; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .panel-head h2, .panel-head h3 { margin: 0; font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+    .empty-state { padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); border: 1px dashed var(--border); border-radius: 10px; }
+    .muted { color: var(--text-muted); font-size: 0.88rem; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    .search-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-start; margin-bottom: 1.5rem; }
+    .search-bar select { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 0.65rem 0.8rem; color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 0.9rem; width: 100%; }
+    .search-bar .field { margin: 0; }
+    .card { text-align: left; background: var(--panel-raised); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem; cursor: pointer; color: var(--text); font-family: inherit; display: flex; flex-direction: column; gap: 0.6rem; transition: border-color 0.15s ease; width: 100%; }
+    .card:hover { border-color: var(--accent); }
+    .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+    .card-company { font-weight: 600; }
+    .card-date { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text-muted); }
+    .card-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-meta { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+    .reward { color: var(--accent); }
+    .back { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem; padding: 0; margin-bottom: 1.25rem; font-family: 'Noto Sans JP', sans-serif; }
+    .back:hover { color: var(--text); }
+    .detail-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
+    .detail-head h2 { margin: 0; font-family: 'IBM Plex Mono', monospace; }
+    .detail-desc { color: var(--text-muted); line-height: 1.7; margin: 0.75rem 0 1.5rem; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; padding: 1.25rem; background: var(--panel-raised); border-radius: 10px; border: 1px solid var(--border); }
+    .detail-grid p:last-child { margin: 0; font-size: 0.9rem; white-space: pre-wrap; }
+    .report-list { list-style: none; margin: 1rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+    .report-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.9rem; background: var(--panel-raised); border: 1px solid var(--border); border-radius: 8px; flex-wrap: wrap; }
+    .report-title { flex: 1; font-size: 0.88rem; }
+    .report-status { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--text-muted); }
+    .form { display: flex; flex-direction: column; gap: 1.1rem; margin-top: 1.25rem; }
+    .report-form { margin: 1.25rem 0 2rem; padding: 1.25rem; background: var(--panel-raised); border: 1px solid var(--border); border-radius: 10px; }
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field-label { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+    .field-hint { font-size: 0.74rem; color: var(--text-muted); }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    input, textarea {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 0.65rem 0.8rem;
+      color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 0.9rem; resize: vertical; width: 100%;
     }
-    .sign-area-wrap {
-      margin: 1.5rem 0 0.5rem;
+    input:focus, textarea:focus, .btn:focus-visible, .tab:focus-visible, .card:focus-visible, .sev-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .severity-select { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .sev-btn { display: inline-flex; align-items: center; gap: 0.4rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; padding: 0.4rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; }
+    .sev-btn i { width: 6px; height: 6px; border-radius: 50%; background: var(--chip); display: inline-block; }
+    .sev-btn.active { border-color: var(--chip); color: var(--chip); background: color-mix(in srgb, var(--chip) 12%, transparent); }
+    .form-error { color: var(--critical); font-size: 0.82rem; margin: 0; }
+    .toast { position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); background: var(--panel-raised); border: 1px solid var(--accent); color: var(--text); padding: 0.65rem 1.1rem; border-radius: 999px; font-size: 0.82rem; z-index: 50; font-family: 'IBM Plex Mono', monospace; display: none; }
+    .avatar { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--bg); border: 1px solid var(--border); flex-shrink: 0; }
+    .avatar-lg { width: 64px; height: 64px; border-radius: 10px; }
+    .avatar-placeholder { display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; color: var(--text-muted); font-size: 0.9rem; }
+    .avatar-picker { display: flex; align-items: center; gap: 0.9rem; }
+    .avatar-picker input[type="file"] { width: auto; padding: 0.4rem 0; font-size: 0.8rem; color: var(--text-muted); }
+    .foot { text-align: center; padding: 1.25rem; color: var(--text-muted); font-size: 0.72rem; border-top: 1px solid var(--border); }
+    .auth-status { display: flex; align-items: center; gap: 0.6rem; font-size: 0.82rem; color: var(--text-muted); }
+    .auth-status .who { font-family: 'IBM Plex Mono', monospace; color: var(--text); }
+    .enroll-warning { background: color-mix(in srgb, var(--critical) 12%, transparent); border: 1px solid var(--critical); color: var(--text); padding: 0.9rem 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.6; margin-bottom: 1.5rem; }
+    .qr-box { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 1.5rem; background: var(--panel-raised); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1.5rem; }
+    .qr-box canvas { border-radius: 8px; }
+    .secret-text { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: var(--text-muted); word-break: break-all; text-align: center; }
+    .backup-codes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    .backup-codes span { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; color: var(--text); }
+    .code-input { font-family: 'IBM Plex Mono', monospace; font-size: 1.5rem; letter-spacing: 0.4em; text-align: center; }
+
+    .report-row-clickable { cursor: pointer; transition: border-color 0.15s ease; }
+    .report-row-clickable:hover { border-color: var(--accent); }
+    .comment-thread { display: flex; flex-direction: column; gap: 0.75rem; margin: 1.25rem 0; }
+    .comment-bubble { padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-raised); max-width: 85%; }
+    .comment-bubble.mine { align-self: flex-end; border-color: var(--accent); background: var(--accent-soft, rgba(232,163,61,0.1)); }
+    .comment-meta { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.35rem; }
+    .comment-text { font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; }
+    .comment-item { align-items: flex-start !important; flex-direction: column; gap: 0.35rem !important; }
+    .comment-head { display: flex; justify-content: space-between; width: 100%; }
+    .comment-message { margin: 0; font-size: 0.88rem; line-height: 1.6; white-space: pre-wrap; }
+    @media (max-width: 560px) {
+      .field-row { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: 1fr; }
+      .main { padding: 1.5rem 1rem 2.5rem; }
     }
-    .sign-label {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-bottom: 0.4rem;
-    }
-    canvas#sign-canvas {
-      display: block;
-      width: 100%;
-      height: 180px;
-      background: #fff;
-      border-radius: 6px;
-      border: 2px solid var(--border);
-      cursor: crosshair;
-      touch-action: none;
-    }
-    .sign-actions {
-      display: flex;
-      gap: 0.6rem;
-      margin-top: 0.5rem;
-    }
-    button {
-      padding: 0.55rem 1.2rem;
-      border-radius: 6px;
-      border: none;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    button:disabled { opacity: 0.5; cursor: default; }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-    .btn-primary:not(:disabled):hover { opacity: 0.85; }
-    .btn-ghost:not(:disabled):hover { background: rgba(255,255,255,0.06); }
-    .error { color: var(--critical); font-size: 0.85rem; margin-top: 1rem; display: none; }
-    .success {
-      text-align: center;
-      padding: 2rem;
-    }
-    .success h2 { font-size: 1.2rem; margin-bottom: 0.5rem; }
-    .loading-screen {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 1rem; padding: 3rem 0; color: var(--text-muted);
-    }
-    .spinner {
-      width: 28px; height: 28px;
-      border: 3px solid rgba(255,255,255,0.1);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
-</head>
-<body>
-  <div class="logo">bughunter.uk</div>
-  <div class="panel" id="app">
-    <div class="loading-screen">
-      <div class="spinner"></div>
-      <span>認証中…</span>
-    </div>
-  </div>
 
-  <script>
-    const API_BASE = "https://api.bughunter.uk";
+  <header class="topbar">
+    <button class="brand" data-tab="home">
+      <span class="brand-mark">⌁</span>
+      <span class="brand-text">bughunter<span class="brand-sub">.uk</span></span>
+    </button>
+    <nav class="tabs">
+      <button class="tab" data-tab="home">概要</button>
+      <button class="tab" data-tab="programs">プログラム一覧</button>
+      <button class="tab guest-only" data-tab="company">企業として掲載</button>
+      <button class="tab guest-only" data-tab="hunter">ハンター登録</button>
+      <button class="tab guest-only" data-tab="login">ログイン</button>
+      <button class="tab auth-only" data-tab="myprofile" style="display:none">マイページ</button>
+      <button class="tab auth-only hunter-only" data-tab="myreports" style="display:none">マイレポート</button>
+    </nav>
+    <div class="auth-status" id="auth-status"></div>
+  </header>
 
-    // URLパラメータからトークンを取得
-    const params = new URLSearchParams(location.search);
-    const token = params.get("token") || "";
+  <div class="toast" id="toast"></div>
 
-    let companyName = "";
-    let canvasEl, ctx;
-    let drawing = false;
-    let hasSigned = false;
+  <main class="main" id="main">
+    <div class="loading">読み込み中…</div>
+  </main>
 
-    const app = document.getElementById("app");
+  <footer class="foot">
+    このサイトは Cloudflare Workers + D1 上で動く本番APIに接続しています。
+  </footer>
+</div>
 
-    async function init() {
-      if (!token) {
-        showError("トークンがありません。bughunter.uk のマイページから再度アクセスしてください。");
+<script>
+(function () {
+  // ここを自分のWorkers URLに合わせて変更してください
+  const API_BASE = "https://api.bughunter.uk";
+
+  const SEVERITIES = [
+    { key: "critical", ja: "緊急", en: "Critical", color: "#E5484D" },
+    { key: "high", ja: "高", en: "High", color: "#F0883E" },
+    { key: "medium", ja: "中", en: "Medium", color: "#E8C547" },
+    { key: "low", ja: "低", en: "Low", color: "#5B8DEF" },
+  ];
+
+  const state = { tab: "home", programs: [], hunters: [], reportCount: 0, activeProgramId: null, activeReportId: null, reportOrigin: null, showHiddenReports: false, programSearchQuery: "", programTypeFilter: "all" };
+
+  const main = document.getElementById("main");
+  const toastEl = document.getElementById("toast");
+  let toastTimer = null;
+
+  function sevMeta(key) { return SEVERITIES.find((s) => s.key === key) || SEVERITIES[2]; }
+  // プログラムバッジ定義
+  const BADGE_DEFS = {
+    responsive:  { label: "Responsive",  imageUrl: "https://1drv.ms/i/c/e4cd540adc823eeb/IQRFHSslWln0Tqv1wMu4aiRgAZI5z06m4HCYp2XLKkXAKgg?height=256" },
+    high_reward: { label: "High Reward", imageUrl: "https://1drv.ms/i/c/e4cd540adc823eeb/IQSPPKJTbwgqR7igUAWBCAelAVEf71YFT8vnFPz928_YEpM" },
+    active:      { label: "Active",      imageUrl: null },
+    safe_harbor: { label: "Safe Harbor", imageUrl: "https://1drv.ms/i/c/e4cd540adc823eeb/IQQID5GqHnFGQozW1CPSLMP0AbsqxPjoR63_LQGh_wSQziw" },
+  };
+
+  function renderBadges(badgesJson) {
+    const badges = (() => { try { return JSON.parse(badgesJson || "[]"); } catch { return []; } })();
+    if (!badges.length) return "";
+    const items = badges.map((key) => {
+      const def = BADGE_DEFS[key];
+      if (!def) return "";
+      const img = def.imageUrl
+        ? `<img src="${def.imageUrl}" alt="${esc(def.label)}" style="width:1.2rem;height:1.2rem;object-fit:contain;border-radius:2px;">`
+        : `<span style="font-size:1rem;">🟢</span>`;
+      return `<span style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:999px;padding:0.18rem 0.55rem;font-size:0.72rem;font-weight:600;color:var(--text);">${img}${esc(def.label)}</span>`;
+    }).join("");
+    return `<div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.5rem;">${items}</div>`;
+  }
+
+  function fmtDate(ts) {
+    const d = new Date(ts);
+    return d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0");
+  }
+  function esc(str) {
+    const div = document.createElement("div");
+    div.textContent = str == null ? "" : String(str);
+    return div.innerHTML;
+  }
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.style.display = "none"; }, 3200);
+  }
+
+  // ---------- API呼び出し ----------
+  async function apiGet(path) {
+    const res = await fetch(`${API_BASE}${path}`);
+    if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+    return res.json();
+  }
+  async function apiPost(path, body) {
+    const session = getSession();
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || `POST ${path} failed: ${res.status}`);
+    return json;
+  }
+
+  // 画像アップロード（multipart/form-data、本人のトークンが必要）
+  async function apiUploadAvatar(type, id, file) {
+    const fd = new FormData();
+    fd.append("avatar", file);
+    const session = getSession();
+    const res = await fetch(`${API_BASE}/${type}/${id}/avatar`, {
+      method: "POST",
+      headers: session ? { Authorization: `Bearer ${session.token}` } : {},
+      body: fd,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || "画像のアップロードに失敗しました");
+    return json;
+  }
+
+  // ---------- セッション（ローカルストレージ） ----------
+  const SESSION_KEY = "bbp_session";
+  function getSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function setSession(session) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    renderAuthStatus();
+  }
+  function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+    renderAuthStatus();
+  }
+
+  async function apiConfirmTotp(type, id, code) {
+    return apiPost(`/${type}/${id}/confirm-totp`, { code });
+  }
+  async function apiLogin(userType, email, code) {
+    return apiPost("/auth/login", { userType, email, code });
+  }
+  async function apiLogout() {
+    const session = getSession();
+    if (!session) return;
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.token}` },
+      });
+    } catch (e) {
+      // ネットワークエラーでもローカルのセッションは消す
+    }
+    clearSession();
+  }
+
+  function updateNavVisibility() {
+    const session = getSession();
+    document.querySelectorAll(".guest-only").forEach((el) => { el.style.display = session ? "none" : ""; });
+    document.querySelectorAll(".auth-only").forEach((el) => { el.style.display = session ? "" : "none"; });
+    document.querySelectorAll(".hunter-only").forEach((el) => {
+      if (!session) { el.style.display = "none"; return; }
+      el.style.display = session.userType === "hunter" ? "" : "none";
+    });
+  }
+
+  function renderAuthStatus() {
+    updateNavVisibility();
+    const el = document.getElementById("auth-status");
+    const session = getSession();
+    if (!session) {
+      el.innerHTML = "";
+      return;
+    }
+    const label = session.userType === "hunter" ? "ハンター" : "企業";
+    el.innerHTML = `
+      <span class="who">${esc(session.name || "")}</span>
+      <span class="muted">(${label})</span>
+      <button class="btn ghost sm" id="logout-btn">ログアウト</button>
+    `;
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      await apiLogout();
+      showToast("ログアウトしました");
+      setTab("home");
+    });
+  }
+
+  // D1のsnake_caseキーをフロント表示用に正規化
+  function normalizeProgram(p) {
+    return {
+      id: p.id,
+      companyName: p.company_name,
+      contactEmail: p.contact_email,
+      scope: p.scope,
+      description: p.description,
+      rewardMin: p.reward_min,
+      rewardMax: p.reward_max,
+      programType: p.program_type,
+      avatarUrl: p.avatar_key ? `${API_BASE}/avatars/${p.avatar_key}` : null,
+      createdAt: p.created_at,
+      badges: p.badges || "[]",
+      safeHarborPdfUrl: p.safe_harbor_pdf_url || null,
+      isAccepting: !!p.is_accepting,
+    };
+  }
+  function normalizeReport(r) {
+    return {
+      id: r.id,
+      programId: r.program_id,
+      title: r.title,
+      severity: r.severity,
+      description: r.description,
+      poc: r.poc,
+      contactEmail: r.contact_email,
+      status: r.status,
+      hiddenByCompany: !!r.hidden_by_company,
+      createdAt: r.created_at,
+    };
+  }
+
+  async function refreshPrograms() {
+    const data = await apiGet("/programs");
+    state.programs = (data.programs || []).map(normalizeProgram);
+  }
+  async function refreshHunters() {
+    const data = await apiGet("/hunters");
+    state.hunters = data.hunters || [];
+  }
+  // 全プログラムのレポート件数を合計してホーム画面の統計に使う（MVP規模向けの簡易実装）
+  async function refreshReportCount() {
+    try {
+      const counts = await Promise.all(
+        state.programs.map((p) => apiGet(`/programs/${p.id}/reports`).then((d) => (d.reports || []).length).catch(() => 0))
+      );
+      state.reportCount = counts.reduce((a, b) => a + b, 0);
+    } catch (e) {
+      state.reportCount = 0;
+    }
+  }
+
+  function setTab(tab) {
+    const session = getSession();
+    // ログイン中は登録・ログイン画面の代わりにプログラム一覧へ誘導
+    if (session && (tab === "company" || tab === "hunter" || tab === "login")) {
+      tab = "programs";
+    }
+    if (tab === "myreports" && (!session || session.userType !== "hunter")) {
+      tab = session ? "myprofile" : "login";
+    }
+    state.tab = tab;
+    state.activeProgramId = null;
+    document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el.dataset.tab === tab));
+    render();
+  }
+
+  document.querySelectorAll("[data-tab]").forEach((el) => {
+    el.addEventListener("click", () => setTab(el.dataset.tab));
+  });
+
+  // ---------- render ----------
+  function render() {
+    if (state.tab === "home") return renderHome();
+    if (state.tab === "programs" && !state.activeProgramId) return renderProgramList();
+    if (state.tab === "programs" && state.activeProgramId) return renderProgramDetail();
+    if (state.tab === "company") return renderCompanyForm();
+    if (state.tab === "hunter") return renderHunterForm();
+    if (state.tab === "login") return renderLogin();
+    if (state.tab === "myprofile") return renderMyProfile();
+    if (state.tab === "myreports") return renderMyReports();
+    if (state.tab === "reportdetail") return renderReportDetail();
+    if (state.tab === "publicprofile") return renderPublicProfile();
+  }
+
+  function renderHome() {
+    document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el.dataset.tab === "home"));
+    main.innerHTML = `
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">JAPAN-FOCUSED BUG BOUNTY PLATFORM</p>
+          <h1>日本向けの、<br>BBPプラットフォーム。</h1>
+          <p class="lead">日本企業向けの、月額固定費ゼロで始められるバグバウンティ運用サイトです。企業はプログラムを掲載し、ハンターは登録して脆弱性を報告します。</p>
+          <div class="hero-actions">
+            <button class="btn primary" id="cta-company">企業として掲載する</button>
+            <button class="btn ghost" id="cta-hunter">ハンターとして登録する</button>
+          </div>
+        </div>
+        <div class="stat-grid">
+          <button class="stat" id="stat-programs">
+            <span class="stat-num">${String(state.programs.length).padStart(2, "0")}</span>
+            <span class="stat-label">掲載中のプログラム</span>
+          </button>
+          <div class="stat">
+            <span class="stat-num">${String(state.hunters.length).padStart(2, "0")}</span>
+            <span class="stat-label">登録ハンター</span>
+          </div>
+          <div class="stat">
+            <span class="stat-num">${String(state.reportCount).padStart(2, "0")}</span>
+            <span class="stat-label">提出レポート</span>
+          </div>
+        </div>
+        <div class="severity-legend">
+          <p class="section-label">重大度の分類</p>
+          <div class="legend-row">
+            ${SEVERITIES.map((s) => `<span class="severity-chip" style="--chip:${s.color}"><i></i> ${s.ja} / ${s.en}</span>`).join("")}
+          </div>
+        </div>
+      </section>
+    `;
+    document.getElementById("cta-company").addEventListener("click", () => setTab("company"));
+    document.getElementById("cta-hunter").addEventListener("click", () => setTab("hunter"));
+    document.getElementById("stat-programs").addEventListener("click", () => setTab("programs"));
+  }
+
+  function getFilteredPrograms() {
+    const q = state.programSearchQuery.trim().toLowerCase();
+    return state.programs.filter((p) => {
+      if (state.programTypeFilter !== "all" && p.programType !== state.programTypeFilter) return false;
+      if (!q) return true;
+      const haystack = `${p.companyName || ""} ${p.description || ""} ${p.scope || ""}`.toLowerCase();
+      return haystack.includes(q);
+    });
+  }
+
+  function renderProgramCards(programs) {
+    if (programs.length === 0) {
+      return `<div class="empty-state"><p>条件に一致するプログラムがありません。</p></div>`;
+    }
+    return `<div class="card-grid">${programs.map((p) => `
+      <button class="card" data-id="${p.id}">
+        <div class="card-top">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            ${p.avatarUrl
+              ? `<img class="avatar" src="${p.avatarUrl}" alt="">`
+              : `<div class="avatar avatar-placeholder">${esc((p.companyName || "?")[0])}</div>`}
+            <span class="card-company">${esc(p.companyName)}</span>
+          </div>
+          <span class="card-date">${fmtDate(p.createdAt)}</span>
+        </div>
+        <p class="card-desc">${esc(p.description)}</p>
+        <div class="card-meta">
+          <span class="severity-chip" style="--chip:${p.programType === "vdp" ? "#5B8DEF" : "#E8A33D"}"><i></i> ${p.programType === "vdp" ? "VDP" : "バグバウンティ"}</span>
+          ${p.programType === "vdp" ? "" : `<span class="reward">¥${Number(p.rewardMin).toLocaleString()} 〜 ¥${Number(p.rewardMax).toLocaleString()}</span>`}
+        </div>
+        ${renderBadges(p.badges)}
+      </button>
+    `).join("")}</div>`;
+  }
+
+  function bindProgramCardClicks() {
+    main.querySelectorAll(".card[data-id]").forEach((el) => {
+      el.addEventListener("click", () => { state.activeProgramId = el.dataset.id; render(); });
+    });
+  }
+
+  function renderProgramList() {
+    document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el.dataset.tab === "programs"));
+
+    main.innerHTML = `
+      <section class="panel">
+        <div class="panel-head">
+          <h2>プログラム一覧</h2>
+          <button class="btn primary sm" id="go-company">+ プログラムを掲載</button>
+        </div>
+
+        <div class="search-bar">
+          <div class="field" style="flex:2; min-width:200px;">
+            <input id="program-search-input" type="text" placeholder="会社名・内容で検索" value="${esc(state.programSearchQuery)}">
+          </div>
+          <div class="field" style="flex:1; min-width:160px;">
+            <select id="program-type-filter">
+              <option value="all">すべての種別</option>
+              <option value="bbp">バグバウンティ</option>
+              <option value="vdp">VDP</option>
+            </select>
+          </div>
+          <button class="btn primary" id="program-search-btn" type="button" style="flex-shrink:0;">検索</button>
+        </div>
+
+        <div id="program-results">${state.programs.length === 0
+          ? `<div class="empty-state"><p>まだプログラムがありません。</p><p class="muted">企業として最初のプログラムを掲載してください。</p></div>`
+          : renderProgramCards(getFilteredPrograms())}</div>
+      </section>
+    `;
+
+    document.getElementById("go-company").addEventListener("click", () => setTab("company"));
+    document.getElementById("program-type-filter").value = state.programTypeFilter;
+
+    function applyFilters() {
+      state.programSearchQuery = document.getElementById("program-search-input").value;
+      state.programTypeFilter = document.getElementById("program-type-filter").value;
+      document.getElementById("program-results").innerHTML = renderProgramCards(getFilteredPrograms());
+      bindProgramCardClicks();
+    }
+
+    document.getElementById("program-search-btn").addEventListener("click", applyFilters);
+    document.getElementById("program-type-filter").addEventListener("change", applyFilters);
+    document.getElementById("program-search-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); applyFilters(); }
+    });
+
+    bindProgramCardClicks();
+  }
+
+  async function renderProgramDetail() {
+    const program = state.programs.find((p) => p.id === state.activeProgramId);
+    if (!program) { state.activeProgramId = null; return renderProgramList(); }
+
+    main.innerHTML = `<div class="loading">読み込み中…</div>`;
+    const session = getSession();
+    const isOwner = session && session.userType === "program" && session.id === program.id;
+
+    let reports = [];
+    if (isOwner) {
+      try {
+        const data = await apiGetAuthed(`/programs/${program.id}/reports${state.showHiddenReports ? "?includeHidden=1" : ""}`);
+        reports = (data.reports || []).map(normalizeReport);
+      } catch (e) {
+        showToast("レポートの取得に失敗しました");
+      }
+    }
+
+    main.innerHTML = `
+      <section class="panel">
+        <button class="back" id="back-btn">← プログラム一覧に戻る</button>
+        <div class="detail-head">
+          <div style="display:flex; align-items:center; gap:0.9rem;">
+            ${program.avatarUrl
+              ? `<img class="avatar avatar-lg" src="${program.avatarUrl}" alt="">`
+              : `<div class="avatar avatar-lg avatar-placeholder">${esc((program.companyName || "?")[0])}</div>`}
+            <h2 style="margin:0;">${esc(program.companyName)}</h2>
+          </div>
+          <span class="card-date">掲載日 ${fmtDate(program.createdAt)}</span>
+        </div>
+        <p class="detail-desc">${esc(program.description)}</p>
+        <div class="detail-grid">
+          <div><p class="section-label">対象スコープ</p><p>${esc(program.scope)}</p></div>
+          <div><p class="section-label">報奨金レンジ</p><p>¥${Number(program.rewardMin).toLocaleString()} 〜 ¥${Number(program.rewardMax).toLocaleString()}</p></div>
+        </div>
+        <div class="panel-head" style="margin-top:2rem">
+          <h3>${isOwner ? `提出済みレポート（${reports.length}）` : "脆弱性を見つけましたか？"}</h3>
+          <button class="btn primary sm" id="toggle-report-form">脆弱性を報告する</button>
+        </div>
+        ${isOwner ? `<button class="btn ghost sm" id="toggle-hidden-reports" type="button" style="margin-bottom:1rem">${state.showHiddenReports ? "非表示のレポートを隠す" : "非表示のレポートも表示する"}</button>` : ""}
+        <div id="report-form-slot"></div>
+        ${isOwner
+          ? (reports.length === 0
+              ? `<div class="empty-state"><p>まだレポートがありません。</p></div>`
+              : `<ul class="report-list">${reports.map((r) => {
+                  const sev = sevMeta(r.severity);
+                  return `<li class="report-row report-row-clickable" data-report-id="${r.id}" style="${r.hiddenByCompany ? "opacity:0.5" : ""}">
+                    <span class="severity-chip" style="--chip:${sev.color}"><i></i> ${sev.ja}</span>
+                    <span class="report-title">${esc(r.title)}${r.hiddenByCompany ? ` <span class="muted" style="font-size:0.72rem">（非表示）</span>` : ""}</span>
+                    <span class="report-status">${esc(r.status)}</span>
+                    <span class="card-date">${fmtDate(r.createdAt)}</span>
+                  </li>`;
+                }).join("")}</ul>`)
+          : `<p class="muted">このプログラムの企業アカウントでログインすると、届いたレポート一覧がここに表示されます。</p>`}
+      </section>
+    `;
+    document.getElementById("back-btn").addEventListener("click", () => { state.activeProgramId = null; render(); });
+    const toggleHiddenBtn = document.getElementById("toggle-hidden-reports");
+    if (toggleHiddenBtn) {
+      toggleHiddenBtn.addEventListener("click", () => {
+        state.showHiddenReports = !state.showHiddenReports;
+        renderProgramDetail();
+      });
+    }
+    main.querySelectorAll("[data-report-id]").forEach((el) => {
+      el.addEventListener("click", () => {
+        state.activeReportId = el.dataset.reportId;
+        state.reportOrigin = { tab: "programs", programId: program.id };
+        state.tab = "reportdetail";
+        render();
+      });
+    });
+
+    let formOpen = false;
+    document.getElementById("toggle-report-form").addEventListener("click", (e) => {
+      if (!session || session.userType !== "hunter") {
+        showToast("レポートの提出にはハンターとしてログインが必要です");
+        setTab("login");
         return;
       }
+      formOpen = !formOpen;
+      e.target.textContent = formOpen ? "フォームを閉じる" : "脆弱性を報告する";
+      document.getElementById("report-form-slot").innerHTML = formOpen ? reportFormWithSafeHarbor(program) : "";
+      if (formOpen) bindReportForm(program.id, program);
+    });
+  }
+
+  function reportFormHTML() {
+    return `
+      <form class="form report-form" id="report-form">
+        <label class="field">
+          <span class="field-label">脆弱性のタイトル *</span>
+          <input name="title" placeholder="例: ログイン画面における反射型XSS">
+        </label>
+        <label class="field">
+          <span class="field-label">重大度 *</span>
+          <div class="severity-select">
+            ${SEVERITIES.map((s, i) => `<button type="button" class="sev-btn${i === 2 ? " active" : ""}" data-sev="${s.key}" style="--chip:${s.color}"><i></i> ${s.ja}</button>`).join("")}
+          </div>
+          <input type="hidden" name="severity" value="medium">
+        </label>
+        <label class="field">
+          <span class="field-label">詳細な説明 *</span>
+          <span class="field-hint">影響範囲や再現条件を含めてください</span>
+          <textarea name="description" rows="4" placeholder="発見した脆弱性の内容と想定される影響"></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">再現手順（PoC）</span>
+          <textarea name="poc" rows="3" placeholder="1. ... 2. ... 3. ..."></textarea>
+        </label>
+        <label class="field">
+          <span class="field-label">連絡先メールアドレス *</span>
+          <input type="email" name="contactEmail" placeholder="you@example.com">
+        </label>
+        <p class="form-error" id="report-error" style="display:none"></p>
+        <button class="btn primary" type="submit">レポートを提出する</button>
+      </form>
+    `;
+  }
+
+  function reportFormWithSafeHarbor(program) {
+    const badges = (() => { try { return JSON.parse(program.badges || "[]"); } catch { return []; } })();
+    const hasSafeHarbor = badges.includes("safe_harbor") && program.safeHarborPdfUrl;
+    if (!hasSafeHarbor) return reportFormHTML();
+    return `
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <p style="font-weight:600;margin:0 0 0.4rem">⚖️ Safe Harbor 同意確認</p>
+        <p class="muted" style="font-size:0.85rem;margin:0 0 0.75rem">このプログラムにはSafe Harbor（不訴追）ポリシーが設定されています。<a href="${esc(program.safeHarborPdfUrl)}" target="_blank" rel="noopener" style="color:var(--accent)">ポリシー文書を確認する →</a></p>
+        <label style="display:flex;align-items:flex-start;gap:0.6rem;cursor:pointer;font-size:0.85rem">
+          <input type="checkbox" id="safe-harbor-agree" style="margin-top:0.15rem;accent-color:var(--accent)">
+          <span>Safe Harborポリシーを読み、内容に同意した上でレポートを提出します</span>
+        </label>
+      </div>
+      ${reportFormHTML()}
+    `;
+  }
+
+  function bindReportForm(programId, program) {
+    const form = document.getElementById("report-form");
+    form.querySelectorAll(".sev-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        form.querySelectorAll(".sev-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        form.querySelector("[name=severity]").value = btn.dataset.sev;
+      });
+    });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const data = Object.fromEntries(fd.entries());
+      const errEl = document.getElementById("report-error");
+      if (!data.title || !data.description || !data.contactEmail) {
+        errEl.textContent = "タイトル・内容・連絡先は必須です";
+        errEl.style.display = "block";
+        return;
+      }
+      // Safe Harbor 同意チェック
+      const agreeBox = document.getElementById("safe-harbor-agree");
+      if (agreeBox && !agreeBox.checked) {
+        errEl.textContent = "Safe Harborポリシーへの同意が必要です";
+        errEl.style.display = "block";
+        return;
+      }
+      errEl.style.display = "none";
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.disabled = true; submitBtn.textContent = "提出中…";
       try {
-        const res = await fetch(`${API_BASE}/safe-harbor/me`, {
-          headers: { Authorization: `Bearer ${token}` },
+        await apiPost("/reports", { ...data, programId });
+        showToast("レポートを提出しました");
+        render();
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "レポートを提出する";
+        showToast(err.message || "保存に失敗しました。もう一度お試しください");
+      }
+    });
+  }
+
+  function renderCompanyForm() {
+    document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el.dataset.tab === "company"));
+    main.innerHTML = `
+      <section class="panel narrow">
+        <h2>プログラムを掲載する</h2>
+        <p class="muted">プログラムの種類を選んでください。</p>
+        <form class="form" id="company-form">
+          <label class="field">
+            <span class="field-label">プログラム種別 *</span>
+            <div class="login-type-toggle">
+              <button type="button" class="btn ghost sm program-type-btn active-type" data-type="bbp">バグバウンティ（賞金あり）</button>
+              <button type="button" class="btn ghost sm program-type-btn" data-type="vdp">VDP（賞金なし・報告受付のみ）</button>
+            </div>
+            <input type="hidden" name="programType" value="bbp">
+            <span class="field-hint" id="program-type-hint">月額費用はかかりません。報奨金が支払われた際にのみ手数料10%が発生します。</span>
+          </label>
+          <label class="field">
+            <span class="field-label">会社ロゴ</span>
+            <span class="field-hint">png / jpeg / webp / gif、2MBまで（後からでも設定できます）</span>
+            <input type="file" name="avatarFile" accept="image/png,image/jpeg,image/webp,image/gif">
+          </label>
+          <label class="field"><span class="field-label">会社名 *</span><input name="companyName" placeholder="株式会社サンプル"></label>
+          <label class="field"><span class="field-label">連絡先メールアドレス *</span><input type="email" name="contactEmail" placeholder="security@example.co.jp"></label>
+          <label class="field">
+            <span class="field-label">対象スコープ *</span>
+            <span class="field-hint">対象ドメイン・アプリ・除外範囲を明記してください</span>
+            <textarea name="scope" rows="3" placeholder="例: *.example.co.jp のWebアプリケーション全般（決済ページを除く）"></textarea>
+          </label>
+          <div class="field-row" id="reward-range-fields">
+            <label class="field"><span class="field-label">報奨金 下限（円）</span><input type="number" min="0" name="rewardMin" placeholder="10000"></label>
+            <label class="field"><span class="field-label">報奨金 上限（円）</span><input type="number" min="0" name="rewardMax" placeholder="300000"></label>
+          </div>
+          <label class="field">
+            <span class="field-label">プログラムの説明 *</span>
+            <textarea name="description" rows="4" placeholder="プログラムの目的、審査基準、セーフハーバーの範囲など"></textarea>
+          </label>
+          <label class="field" style="flex-direction:row; align-items:center; gap:0.5rem">
+            <input type="checkbox" name="agreedToTerms" style="width:auto">
+            <span class="field-label" style="margin:0"><a href="terms.html" target="_blank" style="color:var(--accent)">利用規約</a>と<a href="privacy.html" target="_blank" style="color:var(--accent)">プライバシーポリシー</a>に同意する</span>
+          </label>
+          <p class="form-error" id="company-error" style="display:none"></p>
+          <button class="btn primary" type="submit">プログラムを掲載する</button>
+        </form>
+      </section>
+    `;
+    const form = document.getElementById("company-form");
+
+    form.querySelectorAll(".program-type-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        form.querySelectorAll(".program-type-btn").forEach((b) => b.classList.remove("active-type"));
+        btn.classList.add("active-type");
+        form.querySelector("[name=programType]").value = btn.dataset.type;
+        const isVdp = btn.dataset.type === "vdp";
+        document.getElementById("reward-range-fields").style.display = isVdp ? "none" : "grid";
+        document.getElementById("program-type-hint").textContent = isVdp
+          ? "無料です。ただし報奨金は設定できません。脆弱性の報告受付・やり取りのみのプログラムになります。"
+          : "月額費用はかかりません。報奨金が支払われた際にのみ手数料10%が発生します。";
+      });
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const avatarFile = fd.get("avatarFile");
+      fd.delete("avatarFile");
+      const data = Object.fromEntries(fd.entries());
+      const errEl = document.getElementById("company-error");
+      if (!data.companyName || !data.contactEmail || !data.scope || !data.description) {
+        errEl.textContent = "すべての必須項目を入力してください";
+        errEl.style.display = "block";
+        return;
+      }
+      if (!data.agreedToTerms) {
+        errEl.textContent = "利用規約とプライバシーポリシーへの同意が必要です";
+        errEl.style.display = "block";
+        return;
+      }
+      const rMin = Number(data.rewardMin) || 0;
+      const rMax = Number(data.rewardMax) || 0;
+      if (rMin > rMax) {
+        errEl.textContent = "報奨金の下限は上限以下にしてください";
+        errEl.style.display = "block";
+        return;
+      }
+      errEl.style.display = "none";
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.disabled = true; submitBtn.textContent = "登録中…";
+      try {
+        const result = await apiPost("/programs", { ...data, rewardMin: rMin, rewardMax: rMax });
+        renderEmailVerify("program", data.contactEmail, result, avatarFile);
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "プログラムを掲載する";
+        showToast(err.message || "保存に失敗しました。もう一度お試しください");
+      }
+    });
+  }
+
+  function renderHunterForm() {
+    document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el.dataset.tab === "hunter"));
+    main.innerHTML = `
+      <section class="panel narrow">
+        <h2>ハンターとして登録する</h2>
+        <p class="muted">登録後、掲載中のプログラムに対してレポートを提出できるようになります。</p>
+        <form class="form" id="hunter-form">
+          <label class="field">
+            <span class="field-label">プロフィール画像</span>
+            <span class="field-hint">png / jpeg / webp / gif、2MBまで（後からでも設定できます）</span>
+            <input type="file" name="avatarFile" accept="image/png,image/jpeg,image/webp,image/gif">
+          </label>
+          <label class="field"><span class="field-label">ハンドルネーム *</span><input name="handle" placeholder="例: shirokuma_sec"></label>
+          <label class="field"><span class="field-label">連絡先メールアドレス *</span><input type="email" name="email" placeholder="you@example.com"></label>
+          <label class="field">
+            <span class="field-label">得意分野</span>
+            <span class="field-hint">Web / モバイル / インフラ / スマートコントラクトなど</span>
+            <input name="skills" placeholder="例: Webアプリ診断、API、認証まわり">
+          </label>
+          <label class="field"><span class="field-label">実績・ポートフォリオURL</span><input name="portfolio" placeholder="HackerOneプロフィール、GitHubなど"></label>
+          <label class="field" style="flex-direction:row; align-items:center; gap:0.5rem">
+            <input type="checkbox" name="agreedToTerms" style="width:auto">
+            <span class="field-label" style="margin:0"><a href="terms.html" target="_blank" style="color:var(--accent)">利用規約</a>と<a href="privacy.html" target="_blank" style="color:var(--accent)">プライバシーポリシー</a>に同意する</span>
+          </label>
+          <p class="form-error" id="hunter-error" style="display:none"></p>
+          <button class="btn primary" type="submit">登録する</button>
+        </form>
+      </section>
+    `;
+    const form = document.getElementById("hunter-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const avatarFile = fd.get("avatarFile");
+      fd.delete("avatarFile");
+      const data = Object.fromEntries(fd.entries());
+      const errEl = document.getElementById("hunter-error");
+      if (!data.handle || !data.email) {
+        errEl.textContent = "ハンドルネームとメールアドレスは必須です";
+        errEl.style.display = "block";
+        return;
+      }
+      if (!data.agreedToTerms) {
+        errEl.textContent = "利用規約とプライバシーポリシーへの同意が必要です";
+        errEl.style.display = "block";
+        return;
+      }
+      errEl.style.display = "none";
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.disabled = true; submitBtn.textContent = "登録中…";
+      try {
+        const result = await apiPost("/hunters", data);
+        renderEmailVerify("hunter", data.email, result, avatarFile);
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "登録する";
+        showToast(err.message || "保存に失敗しました。もう一度お試しください");
+      }
+    });
+  }
+
+  // ---------- メールアドレス確認（登録直後、6桁コードをメールで受け取って入力） ----------
+  function renderEmailVerify(userType, email, registerResult, avatarFile) {
+    const typePath = userType === "hunter" ? "hunters" : "programs";
+    document.querySelectorAll(".tab").forEach((el) => el.classList.remove("active"));
+
+    main.innerHTML = `
+      <section class="panel narrow">
+        <h2>メールアドレスを確認してください</h2>
+        <p class="muted">
+          <strong>${esc(email)}</strong> 宛に確認コードを送信しました（届くまで数分かかる場合があります。迷惑メールフォルダもご確認ください）。
+        </p>
+        ${registerResult.emailSent === false ? `<div class="enroll-warning">メールの送信に失敗した可能性があります。下の「コードを再送信」をお試しください。</div>` : ""}
+
+        <form class="form" id="email-verify-form">
+          <label class="field">
+            <span class="field-label">確認コード（6桁）</span>
+            <input class="code-input" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000">
+          </label>
+          <p class="form-error" id="email-verify-error" style="display:none"></p>
+          <button class="btn primary" type="submit">確認する</button>
+        </form>
+        <button class="btn ghost sm" id="resend-code-btn" type="button" style="margin-top:0.75rem">コードを再送信</button>
+      </section>
+    `;
+
+    const form = document.getElementById("email-verify-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const code = new FormData(form).get("code");
+      const errEl = document.getElementById("email-verify-error");
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.disabled = true; submitBtn.textContent = "確認中…";
+      try {
+        await apiPost(`/${typePath}/${registerResult.id}/confirm-email`, { code });
+        renderTotpEnroll(userType, registerResult, avatarFile);
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "確認する";
+        errEl.textContent = err.message || "コードが正しくありません";
+        errEl.style.display = "block";
+      }
+    });
+
+    document.getElementById("resend-code-btn").addEventListener("click", async () => {
+      try {
+        await apiPost(`/${typePath}/${registerResult.id}/resend-email-code`, {});
+        showToast("コードを再送信しました");
+      } catch (err) {
+        showToast(err.message || "再送信に失敗しました");
+      }
+    });
+  }
+
+  // ---------- TOTP紐付け（QRコード表示 → 認証アプリでスキャン → 6桁コードで確認） ----------
+  function renderTotpEnroll(userType, enrollData, avatarFile) {
+    const typePath = userType === "hunter" ? "hunters" : "programs";
+    document.querySelectorAll(".tab").forEach((el) => el.classList.remove("active"));
+
+    main.innerHTML = `
+      <section class="panel narrow">
+        <h2>認証アプリを設定してください</h2>
+        <div class="enroll-warning">
+          この画面を閉じると、シークレットとバックアップコードは二度と表示されません。<br>
+          必ず今のうちにスキャン・保存してください。
+        </div>
+
+        <div class="qr-box">
+          <img id="qr-image" width="220" height="220" alt="QRコード" style="border-radius:8px; background:#fff; padding:8px;">
+          <p class="secret-text">手動入力する場合のキー:<br>${esc(enrollData.secret)}</p>
+        </div>
+
+        <p class="section-label">バックアップコード（各1回のみ使用可）</p>
+        <p class="muted">スマホを紛失した際、これらのコードでログインできます。安全な場所に保存してください。</p>
+        <div class="backup-codes" id="backup-codes">
+          ${enrollData.backupCodes.map((code) => `<span>${esc(code)}</span>`).join("")}
+        </div>
+        <button class="btn ghost sm" id="download-codes" type="button">バックアップコードをダウンロード</button>
+
+        <form class="form" id="confirm-form" style="margin-top:1.75rem">
+          <label class="field">
+            <span class="field-label">認証アプリに表示されている6桁のコードを入力</span>
+            <input class="code-input" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000">
+          </label>
+          <p class="form-error" id="confirm-error" style="display:none"></p>
+          <button class="btn primary" type="submit">確認して完了する</button>
+        </form>
+      </section>
+    `;
+
+    // QRコードを画像APIで生成（外部JSライブラリ不要）
+    const qrImg = document.getElementById("qr-image");
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(enrollData.otpauthUrl)}`;
+
+    // バックアップコードのダウンロード
+    document.getElementById("download-codes").addEventListener("click", () => {
+      const text = `bughunter.uk バックアップコード\n\n${enrollData.backupCodes.join("\n")}\n\n各コードは1回だけ使用できます。大切に保管してください。`;
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "bughunter-backup-codes.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // コード確認
+    const confirmForm = document.getElementById("confirm-form");
+    confirmForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const code = new FormData(confirmForm).get("code");
+      const errEl = document.getElementById("confirm-error");
+      const submitBtn = confirmForm.querySelector("button[type=submit]");
+      submitBtn.disabled = true; submitBtn.textContent = "確認中…";
+      try {
+        const confirmResult = await apiConfirmTotp(typePath, enrollData.id, code);
+        setSession({
+          token: confirmResult.token,
+          userType,
+          id: enrollData.id,
+          name: userType === "hunter" ? null : null,
         });
-        if (res.status === 401) {
-          showError("セッションが無効です。bughunter.uk に再ログインしてからお試しください。");
-          return;
+        // 名前が未取得なので/auth/meで補完
+        try {
+          const me = await apiGetAuthed("/auth/me");
+          setSession({ token: confirmResult.token, userType, id: enrollData.id, name: userType === "hunter" ? me.handle : me.company_name });
+        } catch (e) {}
+
+        if (avatarFile && avatarFile.size > 0) {
+          try {
+            await apiUploadAvatar(typePath, enrollData.id, avatarFile);
+          } catch (uploadErr) {
+            showToast("登録は完了しましたが、画像のアップロードに失敗しました");
+          }
         }
-        const data = await res.json();
-        companyName = data.companyName || "";
-        renderSignForm(data.pdfUrl);
-      } catch (e) {
-        showError("サーバーへの接続に失敗しました。しばらくしてから再度お試しください。");
+
+        await Promise.all([refreshPrograms(), refreshHunters()]);
+        showToast("設定が完了しました。ログインしました");
+        setTab("home");
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "確認して完了する";
+        errEl.textContent = err.message || "コードが正しくありません";
+        errEl.style.display = "block";
+      }
+    });
+  }
+
+  async function apiGetAuthed(path) {
+    const session = getSession();
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: session ? { Authorization: `Bearer ${session.token}` } : {},
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(json.error || `GET ${path} failed`);
+      err.status = res.status;
+      throw err;
+    }
+    return json;
+  }
+
+  async function apiPatch(path, body) {
+    const session = getSession();
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...(session ? { Authorization: `Bearer ${session.token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || `PATCH ${path} failed: ${res.status}`);
+    return json;
+  }
+
+  // ---------- マイページ（プロフィール編集） ----------
+  function renderProgramTypeStatus(me) {
+    if (me.program_type !== "vdp") {
+      return `<p class="muted" style="margin-top:0.5rem">プログラム種別: バグバウンティ（賞金あり）</p>`;
+    }
+    return `<p class="muted" style="margin-top:0.5rem">プログラム種別: VDP（賞金なし・報告受付のみ）</p>`;
+  }
+
+  function renderVerificationStatus(me) {
+    const status = me.verification_status || "none";
+    if (status === "verified") {
+      return `<p class="muted" style="margin-top:0.5rem; color:#5B8DEF">✓ 本人確認済み</p>`;
+    }
+    if (status === "pending") {
+      return `<p class="muted" style="margin-top:0.5rem">本人確認: 審査中です</p>`;
+    }
+    if (status === "rejected") {
+      return `
+        <p class="muted" style="margin-top:0.5rem; color:var(--critical)">本人確認が承認されませんでした</p>
+        ${me.canStartVerification ? `<button class="btn ghost sm" id="start-verification-btn" type="button" style="margin-top:0.35rem">再申請する</button>` : ""}
+      `;
+    }
+    if (me.canStartVerification) {
+      return `<button class="btn ghost sm" id="start-verification-btn" type="button" style="margin-top:0.5rem">本人確認をリクエストする</button>`;
+    }
+    return `<p class="muted" style="margin-top:0.5rem">本人確認は、トリアージ済みのレポートが1件以上あるとリクエストできます。</p>`;
+  }
+
+  // ---------- チームメンバー管理（企業オーナーのみ） ----------
+  async function loadMembers(programId) {
+    const container = document.getElementById("members-list");
+    if (!container) return;
+    try {
+      const data = await apiGetAuthed(`/programs/${programId}/members`);
+      const members = data.members || [];
+      if (members.length === 0) {
+        container.innerHTML = `<p class="muted">まだメンバーがいません。</p>`;
+        return;
+      }
+      container.innerHTML = members
+        .map(
+          (m) => `
+        <div class="report-row" style="justify-content:space-between">
+          <span>${esc(m.name)}<br><span class="muted" style="font-size:0.75rem">${esc(m.email)}</span></span>
+          <button class="btn ghost sm" data-member-id="${esc(m.id)}" type="button" style="color:var(--critical); border-color:var(--critical)">非表示にする</button>
+        </div>
+      `
+        )
+        .join("");
+      container.querySelectorAll("[data-member-id]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("このメンバーを一覧から非表示にし、ログインもできなくします。データは残ります。よろしいですか？")) return;
+          const session = getSession();
+          try {
+            await fetch(`${API_BASE}/programs/${programId}/members/${btn.dataset.memberId}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${session.token}` },
+            });
+            showToast("メンバーを非表示にしました");
+            loadMembers(programId);
+          } catch (e) {
+            showToast("削除に失敗しました");
+          }
+        });
+      });
+    } catch (e) {
+      container.innerHTML = `<p class="muted">メンバー一覧の取得に失敗しました。</p>`;
+    }
+  }
+
+  function showMemberCredentials(result) {
+    const el = document.getElementById("new-member-credentials");
+    if (!el) return;
+    el.innerHTML = `
+      <div class="enroll-warning">
+        ${esc(result.name)}さんの認証アプリ設定情報です。この画面を閉じると二度と表示されません。安全な方法（対面・電話など、メール本文への貼り付けは避ける）で本人に伝えてください。
+      </div>
+      <div class="qr-box">
+        <img width="200" height="200" alt="QRコード" style="border-radius:8px; background:#fff; padding:8px;"
+             src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(result.otpauthUrl)}">
+        <p class="secret-text">手動入力する場合のキー:<br>${esc(result.secret)}</p>
+      </div>
+      <p class="section-label">バックアップコード</p>
+      <div class="backup-codes">${result.backupCodes.map((code) => `<span>${esc(code)}</span>`).join("")}</div>
+    `;
+  }
+
+  async function renderMyProfile() {
+    const session = getSession();
+    if (!session) { setTab("login"); return; }
+
+    main.innerHTML = `<div class="loading">読み込み中…</div>`;
+    let me;
+    try {
+      me = await apiGetAuthed("/auth/me");
+    } catch (e) {
+      if (e.status === 401) {
+        showToast("セッションの有効期限が切れました。再度ログインしてください");
+        await apiLogout();
+        setTab("login");
+        return;
+      }
+      showToast("プロフィールの取得に失敗しました。時間をおいて再度お試しください");
+      setTab("home");
+      return;
+    }
+
+    const isHunter = session.userType === "hunter";
+    const avatarUrl = me.avatar_key ? `${API_BASE}/avatars/${me.avatar_key}` : null;
+
+    main.innerHTML = `
+      <section class="panel narrow">
+        <h2>マイページ</h2>
+        <p class="muted">${isHunter ? "ハンター" : "企業"}アカウントの情報を編集できます。</p>
+        ${!isHunter && me.isOwner === false ? `<p class="muted" style="margin-top:0.25rem">ログイン中: ${esc(me.actingMemberName || "")}（チームメンバー・オーナー権限なし）</p>` : ""}
+        ${isHunter ? `<p class="reward" style="font-family:'IBM Plex Mono',monospace; margin:0.5rem 0 0">ポイント: ${Number(me.points || 0).toLocaleString()}</p>` : ""}
+        ${isHunter && me.level ? `<p style="font-family:'IBM Plex Mono',monospace; margin:0.25rem 0 0; font-size:0.9rem">レベル: <span style="color:var(--accent); font-weight:600">${esc(me.level.name)}</span> <span style="color:var(--text-muted); font-size:0.78rem">(${me.level.score >= 0 ? "+" : ""}${me.level.score} / 有効 ${me.level.validCount}件 / N/A ${me.level.naCount}件)</span></p>` : ""}
+        ${isHunter ? renderVerificationStatus(me) : ""}
+        ${isHunter ? `<button class="btn ghost sm" id="go-myreports" type="button" style="margin-top:0.5rem">提出したレポートを見る →</button>` : ""}
+        ${!isHunter ? renderProgramTypeStatus(me) : ""}
+
+        <div class="qr-box" style="margin-top:1.25rem">
+          ${avatarUrl
+            ? `<img class="avatar avatar-lg" src="${avatarUrl}" alt="">`
+            : `<div class="avatar avatar-lg avatar-placeholder">${esc((isHunter ? me.handle : me.company_name || "?")[0])}</div>`}
+          <label class="field" style="width:100%">
+            <span class="field-label">画像を変更</span>
+            <input type="file" id="profile-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif">
+          </label>
+        </div>
+
+        <form class="form" id="profile-form">
+          ${isHunter ? `
+            <label class="field"><span class="field-label">ハンドルネーム *</span><input name="handle" value="${esc(me.handle)}"></label>
+            <label class="field"><span class="field-label">得意分野</span><input name="skills" value="${esc(me.skills || "")}"></label>
+            <label class="field"><span class="field-label">実績・ポートフォリオURL</span><input name="portfolio" value="${esc(me.portfolio || "")}"></label>
+            <label class="field">
+              <span class="field-label">PayPal受け取り先</span>
+              <span class="field-hint">paypal.me/あなたのID、または受け取り用メールアドレス。報奨金の支払いに使われます</span>
+              <input name="paypalLink" value="${esc(me.paypal_link || "")}" placeholder="paypal.me/yourname">
+            </label>
+          ` : `
+            <label class="field"><span class="field-label">会社名 *</span><input name="companyName" value="${esc(me.company_name)}"></label>
+            <label class="field" style="flex-direction:row;align-items:center;gap:0.75rem;cursor:pointer">
+              <input type="checkbox" name="isAccepting" id="is-accepting-check" ${me.is_accepting ? "checked" : ""} style="width:1.1rem;height:1.1rem;accent-color:var(--accent)">
+              <span>
+                <span class="field-label" style="margin:0">報告を受け付ける</span>
+                <span class="field-hint" style="margin:0">オフにすると「Active」バッジが外れ、ハンターからの新規レポートが停止します</span>
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-label">対象スコープ *</span>
+              <textarea name="scope" rows="3">${esc(me.scope)}</textarea>
+            </label>
+            <div class="field-row">
+              <label class="field"><span class="field-label">報奨金 下限（円）</span><input type="number" min="0" name="rewardMin" value="${me.reward_min}"></label>
+              <label class="field"><span class="field-label">報奨金 上限（円）</span><input type="number" min="0" name="rewardMax" value="${me.reward_max}"></label>
+            </div>
+            <label class="field">
+              <span class="field-label">プログラムの説明 *</span>
+              <textarea name="description" rows="4">${esc(me.description)}</textarea>
+            </label>
+          `}
+          <p class="form-error" id="profile-error" style="display:none"></p>
+          <button class="btn primary" type="submit">保存する</button>
+        </form>
+      </section>
+
+      ${isHunter ? `
+        <section class="panel narrow" style="margin-top:1.5rem">
+          <h2>公開プロフィール設定</h2>
+          <p class="muted">あなたのプロフィールページ（bughunter.uk/u/${esc(me.handle)}）の公開設定です。</p>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:1rem">
+            ${[
+              { key: "profilePublic",   label: "プロフィールを公開する",         val: me.profile_public },
+              { key: "showLevel",       label: "レベルを表示する",               val: me.show_level },
+              { key: "showPoints",      label: "ポイントを表示する",             val: me.show_points },
+              { key: "showResolved",    label: "解決済みレポート数を表示する",   val: me.show_resolved },
+              { key: "showBountyTotal", label: "総報奨金額を表示する",           val: me.show_bounty_total },
+              { key: "showCompanies",   label: "報奨金を受け取った企業を表示する", val: me.show_companies },
+            ].map(({ key, label, val }) => `
+              <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer">
+                <input type="checkbox" class="profile-vis-check" data-key="${key}" ${val ? "checked" : ""} style="width:1.1rem;height:1.1rem;accent-color:var(--accent)">
+                <span style="font-size:0.9rem">${label}</span>
+              </label>
+            `).join("")}
+          </div>
+          <p class="form-error" id="vis-error" style="display:none;margin-top:0.5rem"></p>
+          <button class="btn ghost sm" id="vis-save-btn" type="button" style="margin-top:0.75rem">保存する</button>
+          <a href="https://u.bughunter.uk?handle=${esc(me.handle)}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.5rem;margin-left:0.75rem;color:var(--accent);font-size:0.85rem">プロフィールを確認 →</a>
+        </section>
+      ` : ""}
+
+      ${!isHunter ? `
+        <section class="panel narrow" style="margin-top:1.5rem">
+          <h2>Safe Harbor 設定</h2>
+          <p class="muted">Safe Harborバッジを取得するには、担当者がWeb上で署名してください。署名済みPDFはGoogle Driveに自動保存されます。</p>
+          ${me.safe_harbor_pdf_url
+            ? `<p style="margin-top:0.75rem">✅ 署名済み <a href="${esc(me.safe_harbor_pdf_url)}" target="_blank" rel="noopener" style="color:var(--accent)">PDFを確認する</a></p>
+               <button class="btn ghost sm" id="safe-harbor-sign-btn" type="button" style="margin-top:0.5rem">再署名する</button>`
+            : `<button class="btn ghost sm" id="safe-harbor-sign-btn" type="button" style="margin-top:0.75rem">署名画面へ進む →</button>`
+          }
+        </section>
+      ` : ""}
+
+      ${!isHunter && me.isOwner !== false ? `
+        <section class="panel narrow" style="margin-top:1.5rem">
+          <h2>チームメンバー</h2>
+          <p class="muted">追加したメンバーは、自分専用のログイン情報でこの企業アカウントを操作できます（プロフィール編集・メンバー管理を除く）。</p>
+          <div id="members-list" style="margin-top:1rem"><div class="loading">読み込み中…</div></div>
+
+          <form class="form" id="add-member-form" style="margin-top:1.5rem">
+            <label class="field"><span class="field-label">名前 *</span><input name="name" placeholder="山田太郎"></label>
+            <label class="field"><span class="field-label">メールアドレス *</span><input type="email" name="email" placeholder="taro@example.co.jp"></label>
+            <p class="form-error" id="add-member-error" style="display:none"></p>
+            <button class="btn primary sm" type="submit">メンバーを追加</button>
+          </form>
+          <div id="new-member-credentials" style="margin-top:1.25rem"></div>
+        </section>
+      ` : ""}
+    `;
+
+    if (isHunter) {
+      const visSaveBtn = document.getElementById("vis-save-btn");
+      if (visSaveBtn) {
+        visSaveBtn.addEventListener("click", async () => {
+          const checks = document.querySelectorAll(".profile-vis-check");
+          const payload = {};
+          checks.forEach((cb) => { payload[cb.dataset.key] = cb.checked; });
+          const errEl = document.getElementById("vis-error");
+          try {
+            await apiPatch(`/hunters/${session.id}`, payload);
+            showToast("公開設定を保存しました");
+            errEl.style.display = "none";
+          } catch (e) {
+            errEl.textContent = "保存に失敗しました";
+            errEl.style.display = "block";
+          }
+        });
       }
     }
 
-    function policyText(company) {
-      return `Safe Harbor ポリシー
-
-${company}（以下「当社」）は、善意かつ誠実な調査を目的として行われたセキュリティリサーチ活動について、バグバウンティプログラム「bughunter.uk」の利用規約の範囲内である限り、法的措置を取らないことを宣言します。
-
-対象となる行動
-・当社のシステム・サービスに対する善意の脆弱性調査
-・発見した脆弱性の当社への報告
-・調査の過程で取得した情報を第三者に開示しないこと
-
-免責の条件
-・当社の許可なく実サービスのデータを窃取・改ざんしないこと
-・サービスの可用性を妨害しないこと
-・発見した脆弱性を当社への報告前に悪用しないこと
-
-本ポリシーは ${company} の代表者による署名をもって効力を持ちます。`;
+    if (!isHunter) {
+      const safeHarborBtn = document.getElementById("safe-harbor-sign-btn");
+      if (safeHarborBtn) {
+        safeHarborBtn.addEventListener("click", () => {
+          // トークンはURLに載せず、postMessageで sign.bughunter.uk にだけ渡す
+          const SIGN_ORIGIN = "https://sign.bughunter.uk";
+          const win = window.open(SIGN_ORIGIN + "/", "_blank");
+          if (!win) { alert("ポップアップがブロックされました。許可してから再度お試しください。"); return; }
+          const onMsg = (ev) => {
+            if (ev.origin !== SIGN_ORIGIN || ev.source !== win) return;
+            if (!ev.data || ev.data.type !== "bbp-sign-ready") return;
+            const session = getSession();
+            win.postMessage({ type: "bbp-sign-token", token: session && session.token }, SIGN_ORIGIN);
+            window.removeEventListener("message", onMsg);
+          };
+          window.addEventListener("message", onMsg);
+          setTimeout(() => window.removeEventListener("message", onMsg), 60000);
+        });
+      }
     }
 
-    function renderSignForm(existingPdfUrl) {
-      app.innerHTML = `
-        <h1>Safe Harbor 署名</h1>
-        <p class="muted" style="margin-top:0.4rem">以下のポリシー文書を確認し、担当者が署名してください。署名後、PDFがGoogle Driveに自動保存されます。</p>
+    if (!isHunter && me.isOwner !== false) {
+      loadMembers(session.id);
+      const addMemberForm = document.getElementById("add-member-form");
+      addMemberForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(addMemberForm);
+        const data = Object.fromEntries(fd.entries());
+        const errEl = document.getElementById("add-member-error");
+        if (!data.name || !data.email) {
+          errEl.textContent = "名前とメールアドレスを入力してください";
+          errEl.style.display = "block";
+          return;
+        }
+        errEl.style.display = "none";
+        const submitBtn = addMemberForm.querySelector("button[type=submit]");
+        submitBtn.disabled = true; submitBtn.textContent = "追加中…";
+        try {
+          const result = await apiPost(`/programs/${session.id}/members`, data);
+          addMemberForm.reset();
+          submitBtn.disabled = false; submitBtn.textContent = "メンバーを追加";
+          showMemberCredentials(result);
+          loadMembers(session.id);
+        } catch (err) {
+          submitBtn.disabled = false; submitBtn.textContent = "メンバーを追加";
+          errEl.textContent = err.message || "追加に失敗しました";
+          errEl.style.display = "block";
+        }
+      });
+    }
 
-        <div class="policy-box" id="policy-text"></div>
+    const form = document.getElementById("profile-form");
+    if (isHunter) {
+      const goReportsBtn = document.getElementById("go-myreports");
+      if (goReportsBtn) goReportsBtn.addEventListener("click", () => setTab("myreports"));
 
-        ${existingPdfUrl ? `<p class="muted" style="margin-bottom:0.75rem">⚠️ すでに署名済みのPDFが存在します。再署名すると上書きされます。</p>` : ""}
+      const startVerificationBtn = document.getElementById("start-verification-btn");
+      if (startVerificationBtn) {
+        startVerificationBtn.addEventListener("click", async () => {
+          startVerificationBtn.disabled = true;
+          startVerificationBtn.textContent = "準備中…";
+          try {
+            const result = await apiPost(`/hunters/${session.id}/start-verification`, {});
+            if (result.url) {
+              window.location.href = result.url;
+            } else {
+              showToast("本人確認の開始に失敗しました");
+              startVerificationBtn.disabled = false;
+              startVerificationBtn.textContent = "本人確認をリクエストする";
+            }
+          } catch (err) {
+            showToast(err.message || "本人確認の開始に失敗しました");
+            startVerificationBtn.disabled = false;
+            startVerificationBtn.textContent = "本人確認をリクエストする";
+          }
+        });
+      }
+    }
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const data = Object.fromEntries(fd.entries());
+      const errEl = document.getElementById("profile-error");
+      const submitBtn = form.querySelector("button[type=submit]");
 
-        <div class="sign-area-wrap">
-          <p class="sign-label">担当者署名（枠内にマウスまたは指で描いてください）</p>
-          <canvas id="sign-canvas" width="1200" height="360"></canvas>
-          <div class="sign-actions">
-            <button class="btn-ghost" id="clear-btn" type="button">クリア</button>
+      if (isHunter && !data.handle) {
+        errEl.textContent = "ハンドルネームは必須です";
+        errEl.style.display = "block";
+        return;
+      }
+      if (!isHunter && (!data.companyName || !data.scope || !data.description)) {
+        errEl.textContent = "会社名・スコープ・説明は必須です";
+        errEl.style.display = "block";
+        return;
+      }
+
+      errEl.style.display = "none";
+      submitBtn.disabled = true; submitBtn.textContent = "保存中…";
+
+      try {
+        const path = isHunter ? `/hunters/${session.id}` : `/programs/${session.id}`;
+        const payload = isHunter
+          ? { handle: data.handle, skills: data.skills, portfolio: data.portfolio, paypalLink: data.paypalLink }
+          : {
+              companyName: data.companyName,
+              scope: data.scope,
+              description: data.description,
+              rewardMin: Number(data.rewardMin) || 0,
+              rewardMax: Number(data.rewardMax) || 0,
+              isAccepting: document.getElementById("is-accepting-check").checked,
+            };
+        await apiPatch(path, payload);
+
+        const avatarFile = document.getElementById("profile-avatar-file").files[0];
+        if (avatarFile) {
+          await apiUploadAvatar(isHunter ? "hunters" : "programs", session.id, avatarFile);
+        }
+
+        setSession({ ...session, name: isHunter ? data.handle : data.companyName });
+        await Promise.all([refreshPrograms(), refreshHunters()]);
+        showToast("プロフィールを更新しました");
+        setTab("myprofile");
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "保存する";
+        errEl.textContent = err.message || "更新に失敗しました";
+        errEl.style.display = "block";
+      }
+    });
+  }
+
+  // ---------- マイレポート（自分が提出したレポート一覧） ----------
+  async function renderMyReports() {
+    const session = getSession();
+    if (!session || session.userType !== "hunter") { setTab("login"); return; }
+
+    main.innerHTML = `<div class="loading">読み込み中…</div>`;
+    let reports = [];
+    let pending = { totalNet: 0, count: 0, canRequest: false, threshold: 5000, alreadyRequested: false };
+    try {
+      const data = await apiGetAuthed(`/hunters/${session.id}/reports`);
+      reports = data.reports || [];
+    } catch (e) {
+      showToast("レポートの取得に失敗しました");
+    }
+    try {
+      pending = await apiGetAuthed(`/hunters/${session.id}/pending-total`);
+    } catch (e) {
+      // 取得できなくても一覧表示は続行する
+    }
+
+    main.innerHTML = `
+      <section class="panel">
+        <div class="panel-head">
+          <h2>マイレポート</h2>
+          <button class="btn primary sm" id="go-programs-2">プログラム一覧へ</button>
+        </div>
+
+        <div class="detail-grid" style="grid-template-columns:1fr; margin-bottom:1.5rem">
+          <div>
+            <p class="section-label">未払いの報奨金 合計（手数料差引後）</p>
+            <p class="reward" style="font-family:'IBM Plex Mono',monospace; font-size:1.3rem; margin:0.25rem 0 0.75rem">
+              ¥${Number(pending.totalNet || 0).toLocaleString()}
+            </p>
+            ${pending.alreadyRequested
+              ? `<p class="muted">支払いを申請済みです。運営者からの送金をお待ちください。</p>`
+              : pending.canRequest
+                ? `<button class="btn primary sm" id="request-payout-btn">支払いを申請する</button>`
+                : `<p class="muted">合計¥${Number(pending.threshold || 5000).toLocaleString()}以上になると、支払いを申請できます（あと¥${Math.max(0, (pending.threshold || 5000) - (pending.totalNet || 0)).toLocaleString()}）。</p>`}
           </div>
         </div>
 
-        <p class="error" id="err-msg"></p>
-        <button class="btn-primary" id="submit-btn" type="button" style="margin-top:1.25rem;width:100%">署名して送信する</button>
-      `;
+        ${reports.length === 0
+          ? `<div class="empty-state"><p>まだレポートを提出していません。</p></div>`
+          : `<ul class="report-list">${reports.map((r) => {
+              const sev = sevMeta(r.severity);
+              return `<li class="report-row report-row-clickable" data-report-id="${r.id}">
+                <span class="severity-chip" style="--chip:${sev.color}"><i></i> ${sev.ja}</span>
+                <span class="report-title">${esc(r.title)}<br><span class="muted" style="font-size:0.75rem">${esc(r.program_company_name)}宛</span></span>
+                <span class="report-status">${esc(r.status)}</span>
+                <span class="card-date">${fmtDate(r.created_at)}</span>
+              </li>`;
+            }).join("")}</ul>`}
+      </section>
+    `;
+    document.getElementById("go-programs-2").addEventListener("click", () => setTab("programs"));
 
-      document.getElementById("policy-text").textContent = policyText(companyName);
+    const requestBtn = document.getElementById("request-payout-btn");
+    if (requestBtn) {
+      requestBtn.addEventListener("click", async () => {
+        requestBtn.disabled = true; requestBtn.textContent = "申請中…";
+        try {
+          await apiPost(`/hunters/${session.id}/request-payout`, {});
+          showToast("支払いを申請しました");
+          renderMyReports();
+        } catch (err) {
+          requestBtn.disabled = false; requestBtn.textContent = "支払いを申請する";
+          showToast(err.message || "申請に失敗しました");
+        }
+      });
+    }
 
-      canvasEl = document.getElementById("sign-canvas");
-      ctx = canvasEl.getContext("2d");
-      ctx.strokeStyle = "#1a1a2e";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
+    main.querySelectorAll("[data-report-id]").forEach((el) => {
+      el.addEventListener("click", () => {
+        state.activeReportId = el.dataset.reportId;
+        state.reportOrigin = { tab: "myreports" };
+        state.tab = "reportdetail";
+        render();
+      });
+    });
+  }
 
-      // マウス
-      canvasEl.addEventListener("mousedown", (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(...pos(e)); });
-      canvasEl.addEventListener("mousemove", (e) => { if (!drawing) return; ctx.lineTo(...pos(e)); ctx.stroke(); hasSigned = true; });
-      canvasEl.addEventListener("mouseup", () => { drawing = false; });
-      canvasEl.addEventListener("mouseleave", () => { drawing = false; });
+  // ---------- レポート詳細（本人ハンター or 宛先企業のみ。返信スレッド付き） ----------
+  async function renderReportDetail() {
+    const session = getSession();
+    if (!session) { setTab("login"); return; }
 
-      // タッチ
-      canvasEl.addEventListener("touchstart", (e) => { e.preventDefault(); drawing = true; ctx.beginPath(); ctx.moveTo(...pos(e.touches[0])); }, { passive: false });
-      canvasEl.addEventListener("touchmove", (e) => { e.preventDefault(); if (!drawing) return; ctx.lineTo(...pos(e.touches[0])); ctx.stroke(); hasSigned = true; }, { passive: false });
-      canvasEl.addEventListener("touchend", () => { drawing = false; });
+    main.innerHTML = `<div class="loading">読み込み中…</div>`;
+    let detail, comments, platformInfo;
+    try {
+      [detail, comments, platformInfo] = await Promise.all([
+        apiGetAuthed(`/reports/${state.activeReportId}`),
+        apiGetAuthed(`/reports/${state.activeReportId}/comments`),
+        apiGet(`/platform-info`).catch(() => ({ paypalLink: null, feePercent: 10 })),
+      ]);
+    } catch (e) {
+      showToast("レポートの取得に失敗しました");
+      goBackFromReportDetail();
+      return;
+    }
 
-      document.getElementById("clear-btn").addEventListener("click", () => {
-        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-        hasSigned = false;
+    const r = detail.report;
+    const sev = sevMeta(r.severity);
+    const commentList = comments.comments || [];
+    const isOwnerCompany = session.userType === "program" && session.id === detail.program.id;
+    const isVdp = detail.program.program_type === "vdp";
+    const STATUS_OPTIONS = ["トリアージ", "返信待ち", "info", "解決済み", "スパム", "N/A", "重複", "閉鎖"];
+
+    main.innerHTML = `
+      <section class="panel">
+        <button class="back" id="report-back-btn">← 戻る</button>
+        <div class="detail-head">
+          <h2>${esc(r.title)}</h2>
+          <span class="severity-chip" style="--chip:${sev.color}"><i></i> ${sev.ja}</span>
+        </div>
+        <p class="muted" style="margin:0.5rem 0 1.25rem">
+          ${esc(detail.program.company_name)}宛${detail.hunter ? ` ／ 報告者: ${esc(detail.hunter.handle)}` : ""} ／ ステータス: ${esc(r.status)} ／ ${fmtDate(r.created_at)}
+        </p>
+        ${!isOwnerCompany && !isVdp && r.reward_amount != null ? `
+          <p class="reward" style="font-family:'IBM Plex Mono',monospace; margin:0 0 1.25rem">
+            ${r.reward_paid
+              ? `受け取り額: ¥${Math.round(Number(r.reward_amount) * (1 - platformInfo.feePercent / 100)).toLocaleString()}（支払い済み）`
+              : `受け取り予定額: ¥${Math.round(Number(r.reward_amount) * (1 - platformInfo.feePercent / 100)).toLocaleString()}（未払い）`}
+          </p>
+        ` : ""}
+
+        <div class="detail-grid" style="grid-template-columns:1fr">
+          <div><p class="section-label">詳細な説明</p><p style="white-space:pre-wrap">${esc(r.description)}</p></div>
+        </div>
+        ${r.poc ? `
+          <div class="detail-grid" style="grid-template-columns:1fr; margin-top:1rem">
+            <div><p class="section-label">再現手順（PoC）</p><p style="white-space:pre-wrap">${esc(r.poc)}</p></div>
+          </div>
+        ` : ""}
+
+        ${isOwnerCompany ? `
+          <div class="report-form" style="margin-top:1.5rem">
+            <p class="section-label" style="margin-bottom:0.75rem">管理（企業のみ）</p>
+            ${!isVdp && r.reward_amount != null ? `
+              <div class="detail-grid" style="grid-template-columns:1fr; margin-bottom:1rem">
+                <div>
+                  <p class="section-label">報奨金のお支払いについて</p>
+                  <p style="line-height:1.8">
+                    報奨金は<strong>プラットフォーム経由</strong>でハンターにお支払いします。以下の送金先に、報奨金の全額をお送りください（手数料${platformInfo.feePercent}%を差し引いた金額がハンターに届きます）。<br>
+                    送金先(PayPal): <span style="font-family:'IBM Plex Mono',monospace">${esc(platformInfo.paypalLink || "未設定")}</span><br>
+                    送金額（全額）: ¥${Number(r.reward_amount).toLocaleString()}<br>
+                    プラットフォーム手数料（${platformInfo.feePercent}%）: ¥${Math.round(Number(r.reward_amount) * (platformInfo.feePercent / 100)).toLocaleString()}<br>
+                    ハンターへの支払い額: ¥${Math.round(Number(r.reward_amount) * (1 - platformInfo.feePercent / 100)).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <p class="muted" style="margin-bottom:1rem">支払い状況: ${r.reward_paid ? "支払い済み" : "未払い"}</p>
+              ${Number(r.reward_amount) >= 100000 ? `
+                <div class="enroll-warning" style="margin-bottom:1rem">
+                  10万円以上の送金では、10万円ごとに分割して送金してください。入金されないことがあります。
+                </div>
+              ` : ""}
+            ` : ""}
+            ${isVdp ? `<p class="muted" style="margin-bottom:1rem">VDPプログラムのため、報奨金の設定はできません。</p>` : ""}
+            <form class="form" id="status-form">
+              <div class="field-row">
+                <label class="field">
+                  <span class="field-label">ステータス</span>
+                  <select name="status">
+                    ${STATUS_OPTIONS.map((s) => `<option value="${esc(s)}"${s === r.status ? " selected" : ""}>${esc(s)}</option>`).join("")}
+                  </select>
+                </label>
+                ${!isVdp ? `
+                  <label class="field">
+                    <span class="field-label">報奨金（円）</span>
+                    <input type="number" min="0" name="rewardAmount" value="${r.reward_amount != null ? r.reward_amount : ""}" placeholder="未設定">
+                  </label>
+                ` : ""}
+              </div>
+              <p class="form-error" id="status-error" style="display:none"></p>
+              <button class="btn primary sm" type="submit">更新する</button>
+            </form>
+            <div style="display:flex; gap:0.75rem; margin-top:0.75rem; flex-wrap:wrap">
+              <button class="btn ghost sm" id="toggle-hide-report-btn" type="button">${r.hidden_by_company ? "表示に戻す" : "非表示にする"}</button>
+              <button class="btn ghost sm" id="delete-report-btn" type="button" style="color:var(--critical); border-color:var(--critical)">このレポートを削除する</button>
+            </div>
+          </div>
+        ` : ""}
+
+        <p class="section-label" style="margin-top:2rem">やり取り</p>
+        <div class="comment-thread" id="comment-thread">
+          ${commentList.length === 0
+            ? `<p class="muted">まだやり取りはありません。</p>`
+            : commentList.map((cm) => {
+                const mine = cm.author_type === session.userType && cm.author_id === session.id;
+                const who = cm.author_type === "hunter" ? "ハンター" : "企業";
+                return `<div class="comment-bubble${mine ? " mine" : ""}">
+                  <div class="comment-meta">${who} ・ ${fmtDate(cm.created_at)}</div>
+                  <div class="comment-text">${esc(cm.message)}</div>
+                </div>`;
+              }).join("")}
+        </div>
+
+        <form class="form" id="comment-form">
+          <label class="field">
+            <span class="field-label">返信を書く</span>
+            <textarea name="message" rows="3" placeholder="対応状況や追加の質問などを入力してください"></textarea>
+          </label>
+          <p class="form-error" id="comment-error" style="display:none"></p>
+          <button class="btn primary" type="submit">送信する</button>
+        </form>
+      </section>
+    `;
+
+    document.getElementById("report-back-btn").addEventListener("click", goBackFromReportDetail);
+
+    if (isOwnerCompany) {
+      const statusForm = document.getElementById("status-form");
+      statusForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(statusForm);
+        const status = fd.get("status");
+        const hasRewardField = statusForm.querySelector("[name=rewardAmount]") !== null;
+        const rewardRaw = fd.get("rewardAmount");
+        const payload = { status };
+        if (hasRewardField) {
+          payload.rewardAmount = rewardRaw === "" ? null : Number(rewardRaw);
+        }
+        const errEl = document.getElementById("status-error");
+        const submitBtn = statusForm.querySelector("button[type=submit]");
+        submitBtn.disabled = true; submitBtn.textContent = "更新中…";
+        try {
+          await apiPatch(`/reports/${state.activeReportId}`, payload);
+          showToast("更新しました");
+          renderReportDetail();
+        } catch (err) {
+          submitBtn.disabled = false; submitBtn.textContent = "更新する";
+          errEl.textContent = err.message || "更新に失敗しました";
+          errEl.style.display = "block";
+        }
       });
 
-      document.getElementById("submit-btn").addEventListener("click", submit);
+      document.getElementById("toggle-hide-report-btn").addEventListener("click", async () => {
+        try {
+          await apiPatch(`/reports/${state.activeReportId}`, { hiddenByCompany: !r.hidden_by_company });
+          showToast(r.hidden_by_company ? "表示に戻しました" : "非表示にしました");
+          renderReportDetail();
+        } catch (err) {
+          showToast(err.message || "更新に失敗しました");
+        }
+      });
+
+      document.getElementById("delete-report-btn").addEventListener("click", async () => {
+        if (!confirm("このレポートを削除します。元に戻せません。よろしいですか？")) return;
+        try {
+          await fetch(`${API_BASE}/reports/${state.activeReportId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${session.token}` },
+          });
+          showToast("レポートを削除しました");
+          goBackFromReportDetail();
+        } catch (err) {
+          showToast("削除に失敗しました");
+        }
+      });
     }
 
-    function pos(e) {
-      const rect = canvasEl.getBoundingClientRect();
-      const scaleX = canvasEl.width / rect.width;
-      const scaleY = canvasEl.height / rect.height;
-      return [
-        (e.clientX - rect.left) * scaleX,
-        (e.clientY - rect.top) * scaleY,
-      ];
-    }
-
-    async function submit() {
-      const errEl = document.getElementById("err-msg");
-      errEl.style.display = "none";
-
-      if (!hasSigned) {
-        errEl.textContent = "署名を描いてください";
+    const form = document.getElementById("comment-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = new FormData(form).get("message");
+      const errEl = document.getElementById("comment-error");
+      if (!message || !message.trim()) {
+        errEl.textContent = "メッセージを入力してください";
         errEl.style.display = "block";
         return;
       }
-
-      const submitBtn = document.getElementById("submit-btn");
-      submitBtn.disabled = true;
-      submitBtn.textContent = "PDFを生成してアップロード中…";
-
+      errEl.style.display = "none";
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.disabled = true; submitBtn.textContent = "送信中…";
       try {
-        // PDF を生成（署名画像 + ポリシーテキストをCanvas合成してbase64化）
-        const pngBase64 = await buildPng();
-
-        const res = await fetch(`${API_BASE}/safe-harbor/submit`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ png: pngBase64 }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "送信に失敗しました");
-
-        app.innerHTML = `
-          <div class="success">
-            <div style="font-size:2.5rem;margin-bottom:0.75rem">✅</div>
-            <h2>署名が完了しました</h2>
-            <p class="muted" style="margin-top:0.5rem">PDFをGoogle Driveに保存し、Safe Harborバッジを付与しました。</p>
-            <a href="${data.pdfUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:1rem;color:var(--accent);font-size:0.9rem">保存された画像を確認する →</a>
-            <p class="muted" style="margin-top:1.5rem;font-size:0.82rem">このページは閉じていただいて構いません。</p>
-          </div>
-        `;
-      } catch (e) {
-        errEl.textContent = e.message || "エラーが発生しました";
+        await apiPost(`/reports/${state.activeReportId}/comments`, { message });
+        renderReportDetail();
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "送信する";
+        errEl.textContent = err.message || "送信に失敗しました";
         errEl.style.display = "block";
-        submitBtn.disabled = false;
-        submitBtn.textContent = "署名して送信する";
       }
+    });
+  }
+
+  function goBackFromReportDetail() {
+    const origin = state.reportOrigin;
+    state.activeReportId = null;
+    state.reportOrigin = null;
+    if (origin && origin.tab === "programs" && origin.programId) {
+      state.activeProgramId = origin.programId;
+      state.tab = "programs";
+    } else {
+      state.tab = "myreports";
     }
+    render();
+  }
 
-    // ポリシーテキスト + 署名画像を1枚のCanvasに合成してPNGをbase64で返す
-    async function buildPng() {
-      const W = 1240, H = 1754; // A4 比率
-      const offscreen = document.createElement("canvas");
-      offscreen.width = W; offscreen.height = H;
-      const c = offscreen.getContext("2d");
+  // ---------- ログイン ----------
+  function renderLogin() {
+    document.querySelectorAll(".tab").forEach((el) => el.classList.toggle("active", el.dataset.tab === "login"));
+    main.innerHTML = `
+      <section class="panel narrow">
+        <h2>ログイン</h2>
+        <p class="muted">メールアドレスと、認証アプリに表示されている6桁のコードを入力してください。</p>
+        <form class="form" id="login-form">
+          <label class="field">
+            <span class="field-label">アカウント種別</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.25rem">
+              <label id="type-hunter-card" style="display:flex;align-items:center;justify-content:center;padding:0.85rem;border-radius:8px;border:2px solid var(--accent);background:var(--accent-dim);cursor:pointer;transition:all 0.15s">
+                <input type="radio" name="userType" value="hunter" checked style="display:none">
+                <span style="font-weight:600;font-size:0.95rem">ハンター</span>
+              </label>
+              <label id="type-program-card" style="display:flex;align-items:center;justify-content:center;padding:0.85rem;border-radius:8px;border:2px solid var(--border);background:transparent;cursor:pointer;transition:all 0.15s">
+                <input type="radio" name="userType" value="program" style="display:none">
+                <span style="font-weight:600;font-size:0.95rem">企業</span>
+              </label>
+            </div>
+          </label>
+          <label class="field"><span class="field-label">メールアドレス *</span><input type="email" name="email" placeholder="you@example.com"></label>
+          <label class="field">
+            <span class="field-label">6桁のコード（またはバックアップコード） *</span>
+            <input class="code-input" name="code" inputmode="numeric" maxlength="11" placeholder="000000">
+          </label>
+          <p class="form-error" id="login-error" style="display:none"></p>
+          <button class="btn primary" type="submit">ログイン</button>
+        </form>
+      </section>
+    `;
 
-      // 背景
-      c.fillStyle = "#ffffff";
-      c.fillRect(0, 0, W, H);
+    const form = document.getElementById("login-form");
 
-      // ロゴ
-      c.fillStyle = "#f0a500";
-      c.font = "bold 36px sans-serif";
-      c.fillText("bughunter.uk", 80, 80);
+    // アカウント種別カードの切り替え
+    const hunterCard = document.getElementById("type-hunter-card");
+    const programCard = document.getElementById("type-program-card");
+    function selectType(type) {
+      const isHunter = type === "hunter";
+      hunterCard.style.border = isHunter ? "2px solid var(--accent)" : "2px solid var(--border)";
+      hunterCard.style.background = isHunter ? "var(--accent-dim)" : "transparent";
+      programCard.style.border = isHunter ? "2px solid var(--border)" : "2px solid var(--accent)";
+      programCard.style.background = isHunter ? "transparent" : "var(--accent-dim)";
+      form.querySelector(`input[value="${type}"]`).checked = true;
+    }
+    hunterCard.addEventListener("click", () => selectType("hunter"));
+    programCard.addEventListener("click", () => selectType("program"));
 
-      // タイトル
-      c.fillStyle = "#1a1a2e";
-      c.font = "bold 42px sans-serif";
-      c.fillText("Safe Harbor ポリシー", 80, 150);
-
-      // ポリシーテキスト
-      c.font = "28px sans-serif";
-      c.fillStyle = "#333";
-      const lines = policyText(companyName).split("\n");
-      let y = 230;
-      for (const line of lines) {
-        if (line.startsWith("Safe Harbor") || line === `${companyName}`) {
-          c.font = "bold 28px sans-serif";
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const data = Object.fromEntries(fd.entries());
+      const errEl = document.getElementById("login-error");
+      if (!data.email || !data.code) {
+        errEl.textContent = "メールアドレスとコードを入力してください";
+        errEl.style.display = "block";
+        return;
+      }
+      errEl.style.display = "none";
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.disabled = true; submitBtn.textContent = "ログイン中…";
+      try {
+        const result = await apiLogin(data.userType, data.email, data.code);
+        setSession({ token: result.token, userType: result.userType, id: result.id, name: result.name });
+        if (result.usedBackupCode) {
+          showToast(`バックアップコードでログインしました。残り${result.backupCodesRemaining}個です`);
         } else {
-          c.font = "28px sans-serif";
+          showToast("ログインしました");
         }
-        c.fillText(line, 80, y);
-        y += line === "" ? 18 : 42;
-        if (y > H - 380) break;
+        setTab("home");
+      } catch (err) {
+        submitBtn.disabled = false; submitBtn.textContent = "ログイン";
+        errEl.textContent = err.message || "ログインに失敗しました";
+        errEl.style.display = "block";
       }
+    });
+  }
 
-      // 署名枠
-      y = Math.max(y + 40, H - 320);
-      c.strokeStyle = "#ccc";
-      c.lineWidth = 1;
-      c.strokeRect(80, y, 600, 180);
-      c.font = "22px sans-serif";
-      c.fillStyle = "#999";
-      c.fillText("担当者署名", 80, y - 10);
+  // ---------- 公開プロフィールページ ----------
+  async function renderPublicProfile() {
+    const main = document.getElementById("main");
+    const handle = state.publicProfileHandle;
+    main.innerHTML = `<div class="panel narrow" style="max-width:560px;margin:2rem auto"><p class="muted">読み込み中…</p></div>`;
 
-      // 署名画像を貼り付け
-      c.drawImage(canvasEl, 80, y, 600, 180);
-
-      // 日時
-      c.font = "22px sans-serif";
-      c.fillStyle = "#666";
-      c.fillText(`署名日時: ${new Date().toLocaleString("ja-JP")}`, 80, y + 210);
-      c.fillText(`会社名: ${companyName}`, 80, y + 250);
-
-      // PNG として base64 エンコード
-      return new Promise((resolve) => {
-        offscreen.toBlob((blob) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result.split(",")[1]);
-          reader.readAsDataURL(blob);
-        }, "image/png");
-      });
+    let data;
+    try {
+      const res = await fetch(`${API_BASE}/u/${encodeURIComponent(handle)}`);
+      data = await res.json();
+      if (!res.ok) {
+        main.innerHTML = `<div class="panel narrow" style="max-width:560px;margin:2rem auto">
+          <h2>プロフィールが見つかりません</h2>
+          <p class="muted" style="margin-top:0.5rem">${esc(data.error || "このユーザーは存在しないか、プロフィールを非公開にしています。")}</p>
+        </div>`;
+        return;
+      }
+    } catch (e) {
+      main.innerHTML = `<div class="panel narrow" style="max-width:560px;margin:2rem auto"><p class="muted">読み込みに失敗しました。</p></div>`;
+      return;
     }
 
-    function showError(msg) {
-      app.innerHTML = `
-        <h1>エラー</h1>
-        <p class="muted" style="margin-top:0.75rem;color:#f85149">${msg}</p>
-        <a href="https://bughunter.uk" style="display:inline-block;margin-top:1.5rem;color:var(--accent);font-size:0.9rem">← bughunter.uk に戻る</a>
-      `;
+    const avatarUrl = data.avatarKey ? `${API_BASE}/avatars/${data.avatarKey}` : null;
+
+    main.innerHTML = `
+      <div style="max-width:560px;margin:2rem auto">
+        <div class="panel" style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding:2rem;text-align:center">
+          ${avatarUrl
+            ? `<img src="${esc(avatarUrl)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border)">`
+            : `<div style="width:80px;height:80px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:2rem">👤</div>`
+          }
+          <div>
+            <h2 style="font-size:1.4rem;margin:0">@${esc(data.handle)}</h2>
+            ${data.level ? `<p style="margin:0.25rem 0 0;color:var(--accent);font-weight:600">Lv. ${esc(data.level.name)} <span style="color:var(--text-muted);font-size:0.82rem">(${data.level.score >= 0 ? "+" : ""}${data.level.score})</span></p>` : ""}
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1rem;width:100%;margin-top:0.5rem">
+            ${data.points !== null ? `<div class="panel" style="padding:0.75rem;text-align:center"><p class="muted" style="font-size:0.78rem;margin:0">ポイント</p><p style="font-size:1.3rem;font-weight:700;margin:0.25rem 0 0">${Number(data.points).toLocaleString()}</p></div>` : ""}
+            ${data.resolvedCount !== null ? `<div class="panel" style="padding:0.75rem;text-align:center"><p class="muted" style="font-size:0.78rem;margin:0">解決済み</p><p style="font-size:1.3rem;font-weight:700;margin:0.25rem 0 0">${data.resolvedCount}件</p></div>` : ""}
+            ${data.bountyTotal !== null ? `<div class="panel" style="padding:0.75rem;text-align:center"><p class="muted" style="font-size:0.78rem;margin:0">総報奨金</p><p style="font-size:1.3rem;font-weight:700;margin:0.25rem 0 0">¥${Number(data.bountyTotal).toLocaleString()}</p></div>` : ""}
+          </div>
+
+          ${data.skills ? `<p style="color:var(--text-muted);font-size:0.88rem;margin:0">${esc(data.skills)}</p>` : ""}
+          ${data.portfolio ? `<a href="${esc(data.portfolio)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:0.88rem">${esc(data.portfolio)}</a>` : ""}
+
+          ${data.companies && data.companies.length > 0 ? `
+            <div style="width:100%;text-align:left;margin-top:0.5rem">
+              <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem">報奨金を受け取った企業</p>
+              <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+                ${data.companies.map(co => `
+                  <div style="display:flex;align-items:center;gap:0.4rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.6rem;font-size:0.82rem">
+                    ${co.avatar_key ? `<img src="${esc(API_BASE)}/avatars/${esc(co.avatar_key)}" style="width:18px;height:18px;border-radius:3px;object-fit:cover">` : ""}
+                    ${esc(co.company_name)}
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
+
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.5rem">bughunter.uk に参加: ${new Date(data.createdAt).toLocaleDateString("ja-JP")}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------- init ----------
+  (async function init() {
+    try {
+      await refreshPrograms();
+      await refreshHunters();
+      await refreshReportCount();
+    } catch (e) {
+      showToast("APIへの接続に失敗しました");
     }
 
-    init();
-  </script>
+    // 保存されているセッションが今も有効か確認する（本当に認証エラー(401)の時だけログアウトさせる）
+    const session = getSession();
+    if (session) {
+      try {
+        await apiGetAuthed("/auth/me");
+      } catch (e) {
+        if (e.status === 401) {
+          clearSession();
+        }
+        // それ以外（通信エラー・サーバーの一時的な不調など）はログイン状態を維持する
+      }
+    }
+    renderAuthStatus();
+
+    // /?u=ハンドル名 でアクセスされた場合
+    const uParam = new URLSearchParams(location.search).get("u");
+    if (uParam) {
+      state.publicProfileHandle = decodeURIComponent(uParam);
+      setTab("publicprofile");
+    } else {
+      setTab("home");
+    }
+  })();
+})();
+</script>
 </body>
 </html>
